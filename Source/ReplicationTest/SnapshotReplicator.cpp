@@ -3,6 +3,10 @@
 
 #include "SnapshotReplicator.h"
 
+#include "ReplicationTestPlayerState.h"
+#include "GameFramework/GameStateBase.h"
+#include "GameFramework/PlayerState.h"
+
 // Sets default values
 ASnapshotReplicator::ASnapshotReplicator()
 {
@@ -28,19 +32,17 @@ void ASnapshotReplicator::Tick(float DeltaTime)
 
 	if (GetLocalRole() == ROLE_Authority)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Green, TEXT("Tick"));
-
 		FSnapshotPacketBits SnapshotPacketBits;
 		SnapshotPacketBits.TimeStamp = GetWorld()->GetTimeSeconds();
 
-		for(FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
+		for (const APlayerState* PlayerState : GetWorld()->GetGameState()->PlayerArray)
 		{
-			APlayerController* PlayerController = Iterator->Get();
-			APawn* ControlledPawn = PlayerController->GetPawn();
-
-			if (IsValid(ControlledPawn))
+			APawn* ControlledPawn = PlayerState->GetPawn();
+			const AReplicationTestPlayerState* RepTestPlayerState = Cast<AReplicationTestPlayerState>(PlayerState);
+			if (IsValid(ControlledPawn) && IsValid(RepTestPlayerState) && RepTestPlayerState->RepTestPlayerId != 0)
 			{
-				
+				FPlayerSnapshot PlayerSnapshot{RepTestPlayerState->RepTestPlayerId, ControlledPawn->GetActorLocation()};
+				SnapshotPacketBits.PlayerSnapshots.Add(PlayerSnapshot);
 			}
 		}
 
@@ -51,6 +53,32 @@ void ASnapshotReplicator::Tick(float DeltaTime)
 
 void ASnapshotReplicator::MulticastSnapshotRPC_Implementation(FSnapshotPacketBits SnapshotPacketBits)
 {
-	GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Blue, FString::Printf(TEXT("Received snapshot: %f"), SnapshotPacketBits.TimeStamp));
+	if (GetLocalRole() == ROLE_SimulatedProxy)
+	{
+		AReplicationTestPlayerState* LocalPlayerState = GetWorld()->GetFirstPlayerController()->GetPlayerState<AReplicationTestPlayerState>();
+
+		if (IsValid(LocalPlayerState))
+		{
+			for(const FPlayerSnapshot& PlayerSnapshot : SnapshotPacketBits.PlayerSnapshots)
+			{		
+				if (PlayerSnapshot.PlayerId != 0 && LocalPlayerState->RepTestPlayerId != PlayerSnapshot.PlayerId)
+				{
+					for(APlayerState* PlayerState : GetWorld()->GetGameState()->PlayerArray)
+					{
+						AReplicationTestPlayerState* RepTestPlayerState = Cast<AReplicationTestPlayerState>(PlayerState);
+						if (IsValid(RepTestPlayerState) && RepTestPlayerState->RepTestPlayerId != 0 && RepTestPlayerState->RepTestPlayerId == PlayerSnapshot.PlayerId)
+						{
+							APawn* ControlledPawn = PlayerState->GetPawn();
+							if (IsValid(ControlledPawn))
+							{
+								ControlledPawn->SetActorLocation(PlayerSnapshot.Position);
+							}
+							break;
+						}
+					}
+				}
+			}
+		}
+	}
 }
 

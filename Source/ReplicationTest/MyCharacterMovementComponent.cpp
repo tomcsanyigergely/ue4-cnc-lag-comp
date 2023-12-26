@@ -5,5 +5,5 @@
 
 void UMyCharacterMovementComponent::SimulatedTick(float DeltaSeconds)
 {
-	GetOwner()->SetActorLocation(FVector(0, 0, 100.0f * FMath::Sin(GetWorld()->GetTimeSeconds())));
+	//GetOwner()->SetActorLocation(FVector(0, 0, 100.0f * FMath::Sin(GetWorld()->GetTimeSeconds())));
 }

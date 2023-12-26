@@ -4,11 +4,30 @@ bool FSnapshotPacketBits::NetSerialize(FArchive& Ar, UPackageMap* Map, bool& bOu
 {
 	if (!Ar.IsLoading())
 	{
-		Ar << TimeStamp;		
+		Ar << TimeStamp;
+		uint8 NumPlayerSnapshots = PlayerSnapshots.Num();
+		Ar << NumPlayerSnapshots;
+
+		for(int i = 0; i < NumPlayerSnapshots; i++)
+		{
+			Ar << PlayerSnapshots[i].PlayerId;
+			PlayerSnapshots[i].Position.NetSerialize(Ar, Map, bOutSuccess);
+		}
 	}
 	else
 	{
+		PlayerSnapshots.Empty();
+		
 		Ar << TimeStamp;
+		uint8 NumPlayerSnapshots;
+		Ar << NumPlayerSnapshots;
+		PlayerSnapshots.SetNum(NumPlayerSnapshots);
+
+		for(int i = 0; i < NumPlayerSnapshots; i++)
+		{
+			Ar << PlayerSnapshots[i].PlayerId;
+			PlayerSnapshots[i].Position.NetSerialize(Ar, Map, bOutSuccess);
+		}
 	}
 	
 	return true;

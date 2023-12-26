@@ -2,19 +2,20 @@
 
 #include "SnapshotPacketBits.generated.h"
 
+struct FPlayerSnapshot
+{
+	uint8 PlayerId;
+	FVector Position;
+};
+
 USTRUCT()
 struct FSnapshotPacketBits
 {
 	GENERATED_BODY()
 
-	UPROPERTY(Transient)
 	float TimeStamp;
 
-	UPROPERTY(Transient)
-	TArray<FVector> Positions;
-
-	UPROPERTY(Transient)
-	TArray<AActor*> Actors;
+	TArray<FPlayerSnapshot> PlayerSnapshots;
 
 	bool NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess);
 };
