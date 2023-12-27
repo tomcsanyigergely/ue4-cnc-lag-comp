@@ -15,6 +15,7 @@ ASnapshotReplicator::ASnapshotReplicator()
 
 	bReplicates = true;
 	bAlwaysRelevant = true;
+	PrimaryActorTick.TickGroup = TG_PostPhysics;
 }
 
 // Called when the game starts or when spawned
@@ -53,6 +54,9 @@ void ASnapshotReplicator::Tick(float DeltaTime)
 
 void ASnapshotReplicator::MulticastSnapshotRPC_Implementation(FSnapshotPacketBits SnapshotPacketBits)
 {
+	static int messageCount = 0;
+	static float lastMessageTime = 0;
+	
 	if (GetLocalRole() == ROLE_SimulatedProxy)
 	{
 		AReplicationTestPlayerState* LocalPlayerState = GetWorld()->GetFirstPlayerController()->GetPlayerState<AReplicationTestPlayerState>();
@@ -78,6 +82,11 @@ void ASnapshotReplicator::MulticastSnapshotRPC_Implementation(FSnapshotPacketBit
 					}
 				}
 			}
+
+			messageCount++;
+			float Now = GetWorld()->GetTimeSeconds();
+			GEngine->AddOnScreenDebugMessage(-1, 60.0f, FColor::Red, FString::Printf(TEXT("Message count: %d %f"), messageCount, (Now-lastMessageTime) * 1000.0f));
+			lastMessageTime = Now;
 		}
 	}
 }
