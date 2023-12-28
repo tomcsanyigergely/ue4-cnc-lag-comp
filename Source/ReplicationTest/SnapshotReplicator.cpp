@@ -3,6 +3,7 @@
 
 #include "SnapshotReplicator.h"
 
+#include "MyCharacterMovementComponent.h"
 #include "ReplicationTestPlayerState.h"
 #include "GameFramework/GameStateBase.h"
 #include "GameFramework/PlayerState.h"
@@ -33,22 +34,30 @@ void ASnapshotReplicator::Tick(float DeltaTime)
 
 	if (GetLocalRole() == ROLE_Authority)
 	{
-		FSnapshotPacketBits SnapshotPacketBits;
-		SnapshotPacketBits.TimeStamp = GetWorld()->GetTimeSeconds();
+		static int tickCount = 0;
 
-		for (const APlayerState* PlayerState : GetWorld()->GetGameState()->PlayerArray)
+		if (tickCount == 3)
 		{
-			APawn* ControlledPawn = PlayerState->GetPawn();
-			const AReplicationTestPlayerState* RepTestPlayerState = Cast<AReplicationTestPlayerState>(PlayerState);
-			if (IsValid(ControlledPawn) && IsValid(RepTestPlayerState) && RepTestPlayerState->RepTestPlayerId != 0)
-			{
-				FPlayerSnapshot PlayerSnapshot{RepTestPlayerState->RepTestPlayerId, ControlledPawn->GetActorLocation()};
-				SnapshotPacketBits.PlayerSnapshots.Add(PlayerSnapshot);
-			}
-		}
+			tickCount = 0;
+			FSnapshotPacketBits SnapshotPacketBits;
+			SnapshotPacketBits.TimeStamp = GetWorld()->GetTimeSeconds();
 
-		MulticastSnapshotRPC(SnapshotPacketBits);
-		ForceNetUpdate();
+			for (const APlayerState* PlayerState : GetWorld()->GetGameState()->PlayerArray)
+			{
+				APawn* ControlledPawn = PlayerState->GetPawn();
+				const AReplicationTestPlayerState* RepTestPlayerState = Cast<AReplicationTestPlayerState>(PlayerState);
+				if (IsValid(ControlledPawn) && IsValid(RepTestPlayerState) && RepTestPlayerState->RepTestPlayerId != 0)
+				{
+					FPlayerSnapshot PlayerSnapshot{RepTestPlayerState->RepTestPlayerId, ControlledPawn->GetActorLocation()};
+					SnapshotPacketBits.PlayerSnapshots.Add(PlayerSnapshot);
+				}
+			}
+
+			MulticastSnapshotRPC(SnapshotPacketBits);
+			ForceNetUpdate();
+		}
+		
+		tickCount++;
 	}
 }
 
@@ -75,7 +84,8 @@ void ASnapshotReplicator::MulticastSnapshotRPC_Implementation(FSnapshotPacketBit
 							APawn* ControlledPawn = PlayerState->GetPawn();
 							if (IsValid(ControlledPawn))
 							{
-								ControlledPawn->SetActorLocation(PlayerSnapshot.Position);
+								//ControlledPawn->SetActorLocation(PlayerSnapshot.Position);
+								ControlledPawn->FindComponentByClass<UMyCharacterMovementComponent>()->AddSnapshot(SnapshotPacketBits.TimeStamp, PlayerSnapshot);
 							}
 							break;
 						}
