@@ -20,11 +20,20 @@ class REPLICATIONTEST_API UMyCharacterMovementComponent : public UCharacterMovem
 	uint8 BeginIndex = 0;
 	uint8 EndIndex = 0;
 
-	float TargetTime = 0;
+	double CurrentInterpolationTime = 0;
+	double InterpolationMultiplier = 1.0f;
+	double slope = 0;
+	double intercept = 0;
+	int snapshotsReceived = 0;
 
 public:
 	void AddSnapshot(float Timestamp, FPlayerSnapshot PlayerSnapshot);
 
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+
 protected:
 	virtual void SimulatedTick(float DeltaSeconds) override;
+
+private:
+	void CalculateLineOfBestFit();
 };

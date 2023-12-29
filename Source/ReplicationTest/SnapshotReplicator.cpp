@@ -34,6 +34,8 @@ void ASnapshotReplicator::Tick(float DeltaTime)
 
 	if (GetLocalRole() == ROLE_Authority)
 	{
+		//GEngine->AddOnScreenDebugMessage(-1, 60.0f, FColor::Yellow, FString::Printf(TEXT("SnapshotReplicator::Tick(): %f"), GetWorld()->GetTimeSeconds()));
+		
 		static int tickCount = 0;
 
 		if (tickCount == 3)

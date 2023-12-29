@@ -7,6 +7,7 @@ struct FPlayerSnapshot
 	uint8 PlayerId;
 	FVector Position;
 	float Timestamp = 0; // used locally only, not serialized
+	float ArrivalTime = 0; // used locally only, not serialized
 };
 
 USTRUCT()
