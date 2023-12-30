@@ -25,6 +25,8 @@ void ASnapshotReplicator::BeginPlay()
 {
 	Super::BeginPlay();
 
+	GetWorld()->GetTimerManager().SetTimer(PingTimer, this, &ASnapshotReplicator::ShowPing, 1.0f, true);
+
 	//AddTickPrerequisiteComponent(...);
 }
 
@@ -62,6 +64,11 @@ void ASnapshotReplicator::Tick(float DeltaTime)
 		
 		tickCount++;
 	}
+}
+
+void ASnapshotReplicator::ShowPing()
+{
+	GEngine->AddOnScreenDebugMessage(-1, 60.0f, FColor::Yellow, FString::Printf(TEXT("Ping: %d"), GetWorld()->GetFirstPlayerController()->GetPlayerState<APlayerState>()->GetPing() * 4));;
 }
 
 void ASnapshotReplicator::MulticastSnapshotRPC_Implementation(FSnapshotPacketBits SnapshotPacketBits)

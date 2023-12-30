@@ -29,7 +29,8 @@ void UMyCharacterMovementComponent::AddSnapshot(float Timestamp, FPlayerSnapshot
 		AvgTimestamp /= TimestampBufferWindow;
 		AvgArrivalTime /= TimestampBufferWindow;
 		double Diff = AvgTimestamp - AvgArrivalTime;
-		
+
+		// TODO: slope-ot figyelembe venni!!!!
 		double TargetInterpolationTime = GetWorld()->GetTimeSeconds() + Diff - 3.0 / 20.0 - 0.05;
 		//GEngine->AddOnScreenDebugMessage(-1, 60.0f, FColor::Yellow, FString::Printf(TEXT("Diff: %f"), (TargetInterpolationTime - CurrentInterpolationTime) * 1000.0f));
 

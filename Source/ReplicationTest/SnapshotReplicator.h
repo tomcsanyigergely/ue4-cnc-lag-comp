@@ -11,6 +11,8 @@ UCLASS()
 class REPLICATIONTEST_API ASnapshotReplicator : public AActor
 {
 	GENERATED_BODY()
+
+	FTimerHandle PingTimer;
 	
 public:	
 	// Sets default values for this actor's properties
@@ -26,4 +28,8 @@ public:
 
 	UFUNCTION(NetMulticast, Unreliable)
 	void MulticastSnapshotRPC(FSnapshotPacketBits SnapshotPacketBits);
+
+private:
+	UFUNCTION()
+	void ShowPing();
 };
