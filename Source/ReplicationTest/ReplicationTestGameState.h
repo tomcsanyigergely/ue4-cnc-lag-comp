@@ -17,6 +17,9 @@ class REPLICATIONTEST_API AReplicationTestGameState : public AGameStateBase
 public:
 	virtual void AddPlayerState(APlayerState* PlayerState) override;
 
+	double PreviousInterpolationTime = 0;
+	double CurrentInterpolationTime = 0;
+
 private:
 	uint8 LastPlayerId = 0;
 };

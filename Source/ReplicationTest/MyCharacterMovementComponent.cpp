@@ -2,6 +2,8 @@
 
 #include "MyCharacterMovementComponent.h"
 
+#include "ReplicationTestGameState.h"
+
 void UMyCharacterMovementComponent::AddSnapshot(float Timestamp, FPlayerSnapshot PlayerSnapshot)
 {
 	if (Timestamp > SnapshotBuffer[static_cast<uint8>(EndIndex-1)].Timestamp)
@@ -39,6 +41,11 @@ void UMyCharacterMovementComponent::AddSnapshot(float Timestamp, FPlayerSnapshot
 		if (FMath::Abs(TargetInterpolationTime - CurrentInterpolationTime) >= 0.005f)
 		{
 			CurrentInterpolationTime = TargetInterpolationTime;
+			if (IsValid(GetWorld()->GetGameState<AReplicationTestGameState>()))
+			{
+				GetWorld()->GetGameState<AReplicationTestGameState>()->PreviousInterpolationTime = GetWorld()->GetGameState<AReplicationTestGameState>()->CurrentInterpolationTime;
+				GetWorld()->GetGameState<AReplicationTestGameState>()->CurrentInterpolationTime = CurrentInterpolationTime;
+			}
 			GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Blue, FString::Printf(TEXT("Snap")));
 		}
 			
@@ -74,7 +81,8 @@ void UMyCharacterMovementComponent::TickComponent(float DeltaTime, ELevelTick Ti
 }
 
 void UMyCharacterMovementComponent::SimulatedTick(float DeltaSeconds) // on the same Tick, executes earlier than AddSnapshot()
-{	
+{
+	//GEngine->AddOnScreenDebugMessage(-1, 60.0f, FColor::Yellow, FString::Printf(TEXT("CMC::SimulatedTick(): %f"), GetWorld()->GetTimeSeconds()));
 	if (CurrentInterpolationTime != 0)
 	{
 		while (SnapshotBuffer[static_cast<uint8>(BeginIndex+1)].Timestamp < CurrentInterpolationTime && static_cast<uint8>(BeginIndex+1) != EndIndex)
@@ -102,7 +110,12 @@ void UMyCharacterMovementComponent::SimulatedTick(float DeltaSeconds) // on the 
 				GetOwner()->SetActorLocation(SnapshotBuffer[static_cast<uint8>(BeginIndex+1)].Position);
 			}
 		}
-		
+
+		if (IsValid(GetWorld()->GetGameState<AReplicationTestGameState>()))
+		{
+			GetWorld()->GetGameState<AReplicationTestGameState>()->PreviousInterpolationTime = GetWorld()->GetGameState<AReplicationTestGameState>()->CurrentInterpolationTime;
+			GetWorld()->GetGameState<AReplicationTestGameState>()->CurrentInterpolationTime = CurrentInterpolationTime;
+		}
 		CurrentInterpolationTime += DeltaSeconds * InterpolationMultiplier;
 	}
 }

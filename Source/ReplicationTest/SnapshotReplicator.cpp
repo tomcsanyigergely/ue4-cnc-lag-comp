@@ -25,7 +25,10 @@ void ASnapshotReplicator::BeginPlay()
 {
 	Super::BeginPlay();
 
-	GetWorld()->GetTimerManager().SetTimer(PingTimer, this, &ASnapshotReplicator::ShowPing, 1.0f, true);
+	if (GetLocalRole() == ROLE_SimulatedProxy)
+	{
+		GetWorld()->GetTimerManager().SetTimer(PingTimer, this, &ASnapshotReplicator::ShowPing, 1.0f, true);
+	}
 
 	//AddTickPrerequisiteComponent(...);
 }

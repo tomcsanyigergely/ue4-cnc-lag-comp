@@ -3,11 +3,13 @@
 #include "ReplicationTestCharacter.h"
 #include "HeadMountedDisplayFunctionLibrary.h"
 #include "MyCharacterMovementComponent.h"
+#include "ReplicationTestGameState.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Controller.h"
+#include "GameFramework/PlayerState.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Net/UnrealNetwork.h"
 
@@ -156,6 +158,8 @@ void AReplicationTestCharacter::SetupPlayerInputComponent(class UInputComponent*
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 
+	PlayerInputComponent->BindAction("Shoot", IE_Pressed, this, &AReplicationTestCharacter::Shoot);
+
 	PlayerInputComponent->BindAxis("MoveForward", this, &AReplicationTestCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &AReplicationTestCharacter::MoveRight);
 
@@ -194,6 +198,19 @@ void AReplicationTestCharacter::TouchStarted(ETouchIndex::Type FingerIndex, FVec
 void AReplicationTestCharacter::TouchStopped(ETouchIndex::Type FingerIndex, FVector Location)
 {
 		StopJumping();
+}
+
+void AReplicationTestCharacter::Shoot()
+{
+	//GEngine->AddOnScreenDebugMessage(-1, 60.0f, FColor::Yellow, FString::Printf(TEXT("Shoot(): %f"), GetWorld()->GetTimeSeconds()));
+	ServerShootRPC(GetWorld()->GetGameState<AReplicationTestGameState>()->PreviousInterpolationTime);
+}
+
+void AReplicationTestCharacter::ServerShootRPC_Implementation(float ClientTime)
+{
+	float RewindTime = GetWorld()->GetTimeSeconds() - GetPlayerState()->ExactPingV2 * 0.001 - 0.20;
+	float DiffMs = (RewindTime-ClientTime) * 1000.0;
+	UE_LOG(LogTemp, Warning, TEXT("ShootRPC. ClientTime: %f, RewindTime: %f, Ping: %f, Diff: %f ms"), ClientTime, RewindTime, GetPlayerState()->ExactPingV2, DiffMs);
 }
 
 void AReplicationTestCharacter::TurnAtRate(float Rate)

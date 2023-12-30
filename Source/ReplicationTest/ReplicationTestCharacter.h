@@ -64,6 +64,11 @@ protected:
 	/** Handler for when a touch input stops. */
 	void TouchStopped(ETouchIndex::Type FingerIndex, FVector Location);
 
+	void Shoot();
+
+	UFUNCTION(Server, Reliable)
+	void ServerShootRPC(float ClientTime);
+
 protected:
 	// APawn interface
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
