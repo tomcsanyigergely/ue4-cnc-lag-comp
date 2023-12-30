@@ -9,10 +9,13 @@ void AReplicationTestGameState::AddPlayerState(APlayerState* PlayerState)
 {
 	Super::AddPlayerState(PlayerState);
 
-	AReplicationTestPlayerState* RepTestPlayerState = Cast<AReplicationTestPlayerState>(PlayerState);
-	if (IsValid(RepTestPlayerState))
+	if (GetLocalRole() == ROLE_Authority)
 	{
-		RepTestPlayerState->RepTestPlayerId = LastPlayerId+1;
-		LastPlayerId++;
+		AReplicationTestPlayerState* RepTestPlayerState = Cast<AReplicationTestPlayerState>(PlayerState);
+		if (IsValid(RepTestPlayerState))
+		{
+			RepTestPlayerState->RepTestPlayerId = LastPlayerId+1;
+			LastPlayerId++;
+		}
 	}
 }

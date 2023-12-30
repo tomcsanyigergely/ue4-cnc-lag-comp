@@ -15,15 +15,22 @@ class REPLICATIONTEST_API UMyCharacterMovementComponent : public UCharacterMovem
 {
 	GENERATED_BODY()
 
+	struct FTimestamp
+	{
+		float Timestamp;
+		float ArrivalTime;
+	};
+
 	FPlayerSnapshot SnapshotBuffer[256];
+	FTimestamp TimestampBuffer[256];
+
+	uint8_t TimestampBufferWindow = 20;
 
 	uint8 BeginIndex = 0;
 	uint8 EndIndex = 0;
 
 	double CurrentInterpolationTime = 0;
-	double InterpolationMultiplier = 1.0f;
-	double slope = 0;
-	double intercept = 0;
+	double InterpolationMultiplier = 1.0;
 	int snapshotsReceived = 0;
 
 public:
@@ -35,5 +42,5 @@ protected:
 	virtual void SimulatedTick(float DeltaSeconds) override;
 
 private:
-	void CalculateLineOfBestFit();
+	double CalculateInterpolationMultiplier();
 };

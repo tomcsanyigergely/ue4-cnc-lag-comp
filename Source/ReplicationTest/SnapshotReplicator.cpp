@@ -4,6 +4,7 @@
 #include "SnapshotReplicator.h"
 
 #include "MyCharacterMovementComponent.h"
+#include "ReplicationTestGameState.h"
 #include "ReplicationTestPlayerState.h"
 #include "GameFramework/GameStateBase.h"
 #include "GameFramework/PlayerState.h"
@@ -68,21 +69,21 @@ void ASnapshotReplicator::MulticastSnapshotRPC_Implementation(FSnapshotPacketBit
 	static int messageCount = 0;
 	static float lastMessageTime = 0;
 	
-	if (GetLocalRole() == ROLE_SimulatedProxy)
+	if (GetLocalRole() == ROLE_SimulatedProxy && IsValid(GetWorld()->GetGameState<AReplicationTestGameState>()))
 	{
 		AReplicationTestPlayerState* LocalPlayerState = GetWorld()->GetFirstPlayerController()->GetPlayerState<AReplicationTestPlayerState>();
 
 		if (IsValid(LocalPlayerState))
 		{
 			for(const FPlayerSnapshot& PlayerSnapshot : SnapshotPacketBits.PlayerSnapshots)
-			{		
+			{
 				if (PlayerSnapshot.PlayerId != 0 && LocalPlayerState->RepTestPlayerId != PlayerSnapshot.PlayerId)
 				{
 					for(APlayerState* PlayerState : GetWorld()->GetGameState()->PlayerArray)
-					{
+					{						
 						AReplicationTestPlayerState* RepTestPlayerState = Cast<AReplicationTestPlayerState>(PlayerState);
 						if (IsValid(RepTestPlayerState) && RepTestPlayerState->RepTestPlayerId != 0 && RepTestPlayerState->RepTestPlayerId == PlayerSnapshot.PlayerId)
-						{
+						{							
 							APawn* ControlledPawn = PlayerState->GetPawn();
 							if (IsValid(ControlledPawn))
 							{
@@ -97,7 +98,7 @@ void ASnapshotReplicator::MulticastSnapshotRPC_Implementation(FSnapshotPacketBit
 
 			messageCount++;
 			float Now = GetWorld()->GetTimeSeconds();
-			GEngine->AddOnScreenDebugMessage(-1, 60.0f, FColor::Red, FString::Printf(TEXT("Message count: %d %f"), messageCount, (Now-lastMessageTime) * 1000.0f));
+			//GEngine->AddOnScreenDebugMessage(-1, 60.0f, FColor::Red, FString::Printf(TEXT("Message count: %d %f"), messageCount, (Now-lastMessageTime) * 1000.0f));
 			lastMessageTime = Now;
 		}
 	}
