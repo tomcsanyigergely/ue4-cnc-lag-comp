@@ -80,6 +80,18 @@ void UMyCharacterMovementComponent::TickComponent(float DeltaTime, ELevelTick Ti
 	//GEngine->AddOnScreenDebugMessage(-1, 60.0f, FColor::Yellow, FString::Printf(TEXT("CMC::TickComponent(): %f"), GetWorld()->GetTimeSeconds()));
 }
 
+void UMyCharacterMovementComponent::RewindPose(float Timestamp)
+{
+	SavedPoseLocation = GetOwner()->GetActorLocation();
+
+	
+}
+
+void UMyCharacterMovementComponent::ResetPose()
+{
+	GetOwner()->SetActorLocation(SavedPoseLocation);
+}
+
 void UMyCharacterMovementComponent::SimulatedTick(float DeltaSeconds) // on the same Tick, executes earlier than AddSnapshot()
 {
 	//GEngine->AddOnScreenDebugMessage(-1, 60.0f, FColor::Yellow, FString::Printf(TEXT("CMC::SimulatedTick(): %f"), GetWorld()->GetTimeSeconds()));

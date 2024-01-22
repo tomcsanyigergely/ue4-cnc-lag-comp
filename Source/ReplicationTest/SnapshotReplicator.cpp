@@ -4,6 +4,7 @@
 #include "SnapshotReplicator.h"
 
 #include "MyCharacterMovementComponent.h"
+#include "ReplicationTestCharacter.h"
 #include "ReplicationTestGameState.h"
 #include "ReplicationTestPlayerState.h"
 #include "GameFramework/GameStateBase.h"
@@ -94,11 +95,10 @@ void ASnapshotReplicator::MulticastSnapshotRPC_Implementation(FSnapshotPacketBit
 						AReplicationTestPlayerState* RepTestPlayerState = Cast<AReplicationTestPlayerState>(PlayerState);
 						if (IsValid(RepTestPlayerState) && RepTestPlayerState->RepTestPlayerId != 0 && RepTestPlayerState->RepTestPlayerId == PlayerSnapshot.PlayerId)
 						{							
-							APawn* ControlledPawn = PlayerState->GetPawn();
-							if (IsValid(ControlledPawn))
+							AReplicationTestCharacter* Character = PlayerState->GetPawn<AReplicationTestCharacter>();
+							if (IsValid(Character))
 							{
-								//ControlledPawn->SetActorLocation(PlayerSnapshot.Position);
-								ControlledPawn->FindComponentByClass<UMyCharacterMovementComponent>()->AddSnapshot(SnapshotPacketBits.TimeStamp, PlayerSnapshot);
+								Character->GetMyCharacterMovementComponent()->AddSnapshot(SnapshotPacketBits.TimeStamp, PlayerSnapshot);
 							}
 							break;
 						}

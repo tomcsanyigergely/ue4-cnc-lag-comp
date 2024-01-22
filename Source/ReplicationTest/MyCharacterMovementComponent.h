@@ -33,10 +33,15 @@ class REPLICATIONTEST_API UMyCharacterMovementComponent : public UCharacterMovem
 	double InterpolationMultiplier = 1.0;
 	int snapshotsReceived = 0;
 
+	FVector SavedPoseLocation;
+
 public:
 	void AddSnapshot(float Timestamp, FPlayerSnapshot PlayerSnapshot);
 
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+
+	void RewindPose(float Timestamp);
+	void ResetPose();
 
 protected:
 	virtual void SimulatedTick(float DeltaSeconds) override;

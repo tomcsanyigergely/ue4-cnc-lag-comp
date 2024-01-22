@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "MyCharacterMovementComponent.h"
 #include "GameFramework/Character.h"
 #include "ReplicationTestCharacter.generated.h"
 
@@ -34,6 +35,8 @@ public:
 	/** Base look up/down rate, in deg/sec. Other scaling may affect final rate. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
 	float BaseLookUpRate;
+
+	FORCEINLINE UMyCharacterMovementComponent* GetMyCharacterMovementComponent() { return (UMyCharacterMovementComponent*)(GetMovementComponent()); }
 
 protected:
 
