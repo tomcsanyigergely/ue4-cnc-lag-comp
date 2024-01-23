@@ -4,7 +4,7 @@
 
 #include "ReplicationTestGameState.h"
 
-void UMyCharacterMovementComponent::AddSnapshot(float Timestamp, FPlayerSnapshot PlayerSnapshot)
+void UMyCharacterMovementComponent::AddClientSideSnapshot(float Timestamp, FPlayerSnapshot PlayerSnapshot)
 {
 	if (Timestamp > SnapshotBuffer[static_cast<uint8>(EndIndex-1)].Timestamp)
 	{
@@ -72,19 +72,39 @@ void UMyCharacterMovementComponent::AddSnapshot(float Timestamp, FPlayerSnapshot
 	}
 }
 
+void UMyCharacterMovementComponent::AddServerSideSnapshot(float Timestamp, FPlayerSnapshot PlayerSnapshot)
+{
+	SnapshotBuffer[EndIndex] = PlayerSnapshot;
+	SnapshotBuffer[EndIndex].Timestamp = Timestamp;
+	EndIndex++;
+}
+
 void UMyCharacterMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType,
-	FActorComponentTickFunction* ThisTickFunction)
+                                                  FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	//GEngine->AddOnScreenDebugMessage(-1, 60.0f, FColor::Yellow, FString::Printf(TEXT("CMC::TickComponent(): %f"), GetWorld()->GetTimeSeconds()));
 }
 
-void UMyCharacterMovementComponent::RewindPose(float Timestamp)
+void UMyCharacterMovementComponent::RewindPose(float RewindTime)
 {
 	SavedPoseLocation = GetOwner()->GetActorLocation();
 
-	
+	uint8 SnapshotIndex = static_cast<uint8>(EndIndex-1);
+	while (SnapshotBuffer[SnapshotIndex].Timestamp > RewindTime && SnapshotBuffer[static_cast<uint8>(SnapshotIndex-1)].Timestamp < SnapshotBuffer[SnapshotIndex].Timestamp)
+	{
+		SnapshotIndex--;
+	}
+
+	uint8 NumSnapshots = EndIndex - SnapshotIndex;
+
+	if (NumSnapshots == 2 && SnapshotBuffer[SnapshotIndex].Timestamp != 0)
+	{
+		float Interp = FMath::Clamp((RewindTime - SnapshotBuffer[SnapshotIndex].Timestamp) / (SnapshotBuffer[static_cast<uint8>(SnapshotIndex+1)].Timestamp - SnapshotBuffer[SnapshotIndex].Timestamp), 0.0f, 1.0f);
+		FVector LerpPosition = FMath::Lerp(SnapshotBuffer[SnapshotIndex].Position, SnapshotBuffer[static_cast<uint8>(SnapshotIndex+1)].Position, Interp);
+		GetOwner()->SetActorLocation(LerpPosition);
+	}
 }
 
 void UMyCharacterMovementComponent::ResetPose()

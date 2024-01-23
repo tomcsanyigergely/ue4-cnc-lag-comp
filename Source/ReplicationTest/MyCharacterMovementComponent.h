@@ -36,11 +36,12 @@ class REPLICATIONTEST_API UMyCharacterMovementComponent : public UCharacterMovem
 	FVector SavedPoseLocation;
 
 public:
-	void AddSnapshot(float Timestamp, FPlayerSnapshot PlayerSnapshot);
+	void AddClientSideSnapshot(float Timestamp, FPlayerSnapshot PlayerSnapshot);
+	void AddServerSideSnapshot(float Timestamp, FPlayerSnapshot PlayerSnapshot);
 
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	void RewindPose(float Timestamp);
+	void RewindPose(float RewindTime);
 	void ResetPose();
 
 protected:

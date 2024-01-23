@@ -48,17 +48,20 @@ void ASnapshotReplicator::Tick(float DeltaTime)
 		if (tickCount == 3)
 		{
 			tickCount = 0;
+			float ServerTime = GetWorld()->GetTimeSeconds();
 			FSnapshotPacketBits SnapshotPacketBits;
-			SnapshotPacketBits.TimeStamp = GetWorld()->GetTimeSeconds();
+			SnapshotPacketBits.TimeStamp = ServerTime;
 
 			for (const APlayerState* PlayerState : GetWorld()->GetGameState()->PlayerArray)
 			{
-				APawn* ControlledPawn = PlayerState->GetPawn();
+				AReplicationTestCharacter* Character = PlayerState->GetPawn<AReplicationTestCharacter>();
 				const AReplicationTestPlayerState* RepTestPlayerState = Cast<AReplicationTestPlayerState>(PlayerState);
-				if (IsValid(ControlledPawn) && IsValid(RepTestPlayerState) && RepTestPlayerState->RepTestPlayerId != 0)
+				if (IsValid(Character) && IsValid(RepTestPlayerState) && RepTestPlayerState->RepTestPlayerId != 0)
 				{
-					FPlayerSnapshot PlayerSnapshot{RepTestPlayerState->RepTestPlayerId, ControlledPawn->GetActorLocation()};
+					FPlayerSnapshot PlayerSnapshot{RepTestPlayerState->RepTestPlayerId, Character->GetActorLocation()};
 					SnapshotPacketBits.PlayerSnapshots.Add(PlayerSnapshot);
+
+					Character->GetMyCharacterMovementComponent()->AddServerSideSnapshot(ServerTime, PlayerSnapshot);
 				}
 			}
 
@@ -98,7 +101,7 @@ void ASnapshotReplicator::MulticastSnapshotRPC_Implementation(FSnapshotPacketBit
 							AReplicationTestCharacter* Character = PlayerState->GetPawn<AReplicationTestCharacter>();
 							if (IsValid(Character))
 							{
-								Character->GetMyCharacterMovementComponent()->AddSnapshot(SnapshotPacketBits.TimeStamp, PlayerSnapshot);
+								Character->GetMyCharacterMovementComponent()->AddClientSideSnapshot(SnapshotPacketBits.TimeStamp, PlayerSnapshot);
 							}
 							break;
 						}
