@@ -99,11 +99,12 @@ void UMyCharacterMovementComponent::RewindPose(float RewindTime)
 
 	uint8 NumSnapshots = EndIndex - SnapshotIndex;
 
-	if (NumSnapshots == 2 && SnapshotBuffer[SnapshotIndex].Timestamp != 0)
+	if (NumSnapshots >= 2 && SnapshotBuffer[SnapshotIndex].Timestamp != 0)
 	{
 		float Interp = FMath::Clamp((RewindTime - SnapshotBuffer[SnapshotIndex].Timestamp) / (SnapshotBuffer[static_cast<uint8>(SnapshotIndex+1)].Timestamp - SnapshotBuffer[SnapshotIndex].Timestamp), 0.0f, 1.0f);
 		FVector LerpPosition = FMath::Lerp(SnapshotBuffer[SnapshotIndex].Position, SnapshotBuffer[static_cast<uint8>(SnapshotIndex+1)].Position, Interp);
 		GetOwner()->SetActorLocation(LerpPosition);
+		LastRewindInterp = Interp;
 	}
 }
 
@@ -136,6 +137,7 @@ void UMyCharacterMovementComponent::SimulatedTick(float DeltaSeconds) // on the 
 				float Interp = FMath::Clamp((CurrentInterpolationTime - SnapshotBuffer[BeginIndex].Timestamp) / (SnapshotBuffer[static_cast<uint8>(BeginIndex+1)].Timestamp - SnapshotBuffer[BeginIndex].Timestamp), 0.0, 1.0);
 				FVector LerpPosition = FMath::Lerp(SnapshotBuffer[BeginIndex].Position, SnapshotBuffer[static_cast<uint8>(BeginIndex+1)].Position, Interp);
 				GetOwner()->SetActorLocation(LerpPosition);
+				LastInterp = Interp;
 			}
 			else
 			{

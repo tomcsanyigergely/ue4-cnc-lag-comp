@@ -6,6 +6,9 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "CollisionChannels.h"
 #include "ReplicationTestCharacter.h"
+#include "ReplicationTestGameState.h"
+#include "GameFramework/GameStateBase.h"
+#include "GameFramework/PlayerState.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 
@@ -40,7 +43,8 @@ void AAimbot::Tick(float DeltaTime)
 
 			if (ShootSignal)
 			{
-				ShootServerRPC(GetActorLocation(), Direction);
+				GEngine->AddOnScreenDebugMessage(-1, 30.0f, FColor::Purple, FString::Printf(TEXT("InterpTime: %f, LastInterp: %f, Pos: [%f %f %f]"), GetWorld()->GetGameState<AReplicationTestGameState>()->CurrentInterpolationTime, Target->GetMyCharacterMovementComponent()->LastInterp, TargetLocation.X, TargetLocation.Y, TargetLocation.Z));
+				ShootServerRPC(GetActorLocation(), Direction, GetWorld()->GetGameState<AReplicationTestGameState>()->CurrentInterpolationTime);
 				ShootSignal = false;
 			}
 		}
@@ -71,9 +75,20 @@ void AAimbot::Shoot()
 	ShootSignal = true;
 }
 
-void AAimbot::ShootServerRPC_Implementation(FVector Location, FVector Direction)
+void AAimbot::ShootServerRPC_Implementation(FVector Location, FVector Direction, float InterpTime)
 {
 	FHitResult OutHit;
+
+	for (const APlayerState* _PlayerState : GetWorld()->GetGameState()->PlayerArray)
+	{
+		AReplicationTestCharacter* Character = _PlayerState->GetPawn<AReplicationTestCharacter>();
+		if (IsValid(Character))
+		{
+			Character->GetMyCharacterMovementComponent()->RewindPose(InterpTime);
+			FVector TargetLocation = Character->Head->GetComponentLocation();
+			UE_LOG(LogTemp, Warning, TEXT("InterpTime: %f, LastRewindInterp: %f, Pos: [%f %f %f]"), InterpTime, Character->GetMyCharacterMovementComponent()->LastRewindInterp, TargetLocation.X, TargetLocation.Y, TargetLocation.Z);
+		}
+	}
 
 	UKismetSystemLibrary::LineTraceSingle(GetWorld(), Location, Location + Direction * 10000.0f, UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_GameTraceChannel_WeaponTrace), false, {}, EDrawDebugTrace::None, OutHit, false);
 
@@ -84,6 +99,15 @@ void AAimbot::ShootServerRPC_Implementation(FVector Location, FVector Direction)
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("MISS"));
+	}
+	
+	for (const APlayerState* _PlayerState : GetWorld()->GetGameState()->PlayerArray)
+	{
+		AReplicationTestCharacter* Character = _PlayerState->GetPawn<AReplicationTestCharacter>();
+		if (IsValid(Character))
+		{
+			Character->GetMyCharacterMovementComponent()->ResetPose();
+		}
 	}
 }
 

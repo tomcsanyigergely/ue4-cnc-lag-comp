@@ -44,5 +44,5 @@ private:
 	void Shoot();
 
 	UFUNCTION(Server, Reliable)
-	void ShootServerRPC(FVector Location, FVector Direction);
+	void ShootServerRPC(FVector Location, FVector Direction, float InterpTime);
 };

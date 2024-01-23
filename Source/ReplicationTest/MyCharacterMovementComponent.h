@@ -30,12 +30,16 @@ class REPLICATIONTEST_API UMyCharacterMovementComponent : public UCharacterMovem
 	uint8 EndIndex = 0;
 
 	double CurrentInterpolationTime = 0;
-	double InterpolationMultiplier = 1.0;
+	double InterpolationMultiplier = 1.0;	
+	
 	int snapshotsReceived = 0;
 
 	FVector SavedPoseLocation;
 
 public:
+	float LastInterp;
+	float LastRewindInterp;
+	
 	void AddClientSideSnapshot(float Timestamp, FPlayerSnapshot PlayerSnapshot);
 	void AddServerSideSnapshot(float Timestamp, FPlayerSnapshot PlayerSnapshot);
 
@@ -43,6 +47,8 @@ public:
 
 	void RewindPose(float RewindTime);
 	void ResetPose();
+
+	FORCEINLINE double GetInterpolationTime() const { return CurrentInterpolationTime; }
 
 protected:
 	virtual void SimulatedTick(float DeltaSeconds) override;
