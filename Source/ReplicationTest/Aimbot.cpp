@@ -43,7 +43,6 @@ void AAimbot::Tick(float DeltaTime)
 
 			if (ShootSignal)
 			{
-				GEngine->AddOnScreenDebugMessage(-1, 30.0f, FColor::Purple, FString::Printf(TEXT("InterpTime: %f, LastInterp: %f, Pos: [%f %f %f]"), GetWorld()->GetGameState<AReplicationTestGameState>()->CurrentInterpolationTime, Target->GetMyCharacterMovementComponent()->LastInterp, TargetLocation.X, TargetLocation.Y, TargetLocation.Z));
 				ShootServerRPC(GetActorLocation(), Direction, GetWorld()->GetGameState<AReplicationTestGameState>()->CurrentInterpolationTime);
 				ShootSignal = false;
 			}
@@ -75,18 +74,22 @@ void AAimbot::Shoot()
 	ShootSignal = true;
 }
 
-void AAimbot::ShootServerRPC_Implementation(FVector Location, FVector Direction, float InterpTime)
+void AAimbot::ShootServerRPC_Implementation(FVector Location, FVector Direction, float TargetRewindTime)
 {
 	FHitResult OutHit;
+
+	float AuthRewindTime = GetWorld()->GetTimeSeconds() - GetPlayerState()->ExactPingV2 * 0.001 - 0.20;
+	float RewindTime = FMath::Clamp(TargetRewindTime, AuthRewindTime - 0.025f, AuthRewindTime + 0.025f);
+
+	UE_LOG(LogTemp, Warning, TEXT("TargetRewindTime: %f, AuthRewindTime: %f, RewindTime: %f, Diff: %f"), TargetRewindTime, AuthRewindTime, RewindTime, RewindTime-TargetRewindTime);
 
 	for (const APlayerState* _PlayerState : GetWorld()->GetGameState()->PlayerArray)
 	{
 		AReplicationTestCharacter* Character = _PlayerState->GetPawn<AReplicationTestCharacter>();
 		if (IsValid(Character))
 		{
-			Character->GetMyCharacterMovementComponent()->RewindPose(InterpTime);
+			Character->GetMyCharacterMovementComponent()->RewindPose(RewindTime);
 			FVector TargetLocation = Character->Head->GetComponentLocation();
-			UE_LOG(LogTemp, Warning, TEXT("InterpTime: %f, LastRewindInterp: %f, Pos: [%f %f %f]"), InterpTime, Character->GetMyCharacterMovementComponent()->LastRewindInterp, TargetLocation.X, TargetLocation.Y, TargetLocation.Z);
 		}
 	}
 
