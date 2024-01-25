@@ -74,8 +74,11 @@ protected:
 
 	void Shoot();
 
+	void SprintPressed();
+	void SprintReleased();
+
 	UFUNCTION(Server, Reliable)
-	void ServerShootRPC(float ClientTime);
+	void ServerShootRPC();
 
 protected:
 	// APawn interface

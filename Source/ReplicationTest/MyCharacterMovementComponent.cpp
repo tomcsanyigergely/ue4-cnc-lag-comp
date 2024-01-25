@@ -3,6 +3,85 @@
 #include "MyCharacterMovementComponent.h"
 
 #include "ReplicationTestGameState.h"
+#include "GameFramework/Character.h"
+
+bool UMyCharacterMovementComponent::FSavedMove_MyCharacter::CanCombineWith(const FSavedMovePtr& NewMove, ACharacter* InCharacter, float MaxDelta) const
+{
+	FSavedMove_MyCharacter* NewMyMove = static_cast<FSavedMove_MyCharacter*>(NewMove.Get());
+
+	if (Saved_bWantsToSprint != NewMyMove->Saved_bWantsToSprint)
+	{
+		return false;
+	}
+	
+	return Super::CanCombineWith(NewMove, InCharacter, MaxDelta);
+}
+
+void UMyCharacterMovementComponent::FSavedMove_MyCharacter::Clear()
+{
+	Super::Clear();
+
+	Saved_bWantsToSprint = 0;
+}
+
+uint8 UMyCharacterMovementComponent::FSavedMove_MyCharacter::GetCompressedFlags() const
+{
+	uint8 Result = Super::GetCompressedFlags();
+
+	if (Saved_bWantsToSprint) Result |= FLAG_Custom_0;
+
+	return Result;
+}
+
+void UMyCharacterMovementComponent::FSavedMove_MyCharacter::SetMoveFor(ACharacter* C, float InDeltaTime, FVector const& NewAccel, FNetworkPredictionData_Client_Character& ClientData)
+{
+	FSavedMove_Character::SetMoveFor(C, InDeltaTime, NewAccel, ClientData);
+
+	UMyCharacterMovementComponent* CharacterMovement = Cast<UMyCharacterMovementComponent>(C->GetCharacterMovement());
+
+	Saved_bWantsToSprint = CharacterMovement->Safe_bWantsToSprint;
+}
+
+void UMyCharacterMovementComponent::FSavedMove_MyCharacter::PrepMoveFor(ACharacter* C)
+{
+	FSavedMove_Character::PrepMoveFor(C);
+
+	UMyCharacterMovementComponent* CharacterMovement = Cast<UMyCharacterMovementComponent>(C->GetCharacterMovement());
+
+	CharacterMovement->Safe_bWantsToSprint = Saved_bWantsToSprint;
+}
+
+UMyCharacterMovementComponent::FNetworkPredictionData_Client_MyCharacter::FNetworkPredictionData_Client_MyCharacter(const UCharacterMovementComponent& ClientMovement) : Super(ClientMovement)
+{	
+}
+
+FSavedMovePtr UMyCharacterMovementComponent::FNetworkPredictionData_Client_MyCharacter::AllocateNewMove()
+{
+	return FSavedMovePtr(new FSavedMove_MyCharacter());
+}
+
+FNetworkPredictionData_Client* UMyCharacterMovementComponent::GetPredictionData_Client() const
+{
+	check(PawnOwner != nullptr)
+
+	if (ClientPredictionData == nullptr)
+	{
+		UMyCharacterMovementComponent* MutableThis = const_cast<UMyCharacterMovementComponent*>(this);
+
+		MutableThis->ClientPredictionData = new FNetworkPredictionData_Client_MyCharacter(*this);
+		//MutableThis->ClientPredictionData->MaxSmoothNetUpdateDist = 92.f;
+		//MutableThis->ClientPredictionData->NoSmoothNetUpdateDist = 140.0f;
+	}
+	
+	return ClientPredictionData;
+}
+
+void UMyCharacterMovementComponent::UpdateFromCompressedFlags(uint8 Flags)
+{
+	Super::UpdateFromCompressedFlags(Flags);
+
+	Safe_bWantsToSprint = (Flags & FSavedMove_Character::FLAG_Custom_0) != 0;
+}
 
 void UMyCharacterMovementComponent::AddClientSideSnapshot(float Timestamp, FPlayerSnapshot PlayerSnapshot)
 {
@@ -111,6 +190,33 @@ void UMyCharacterMovementComponent::RewindPose(float RewindTime)
 void UMyCharacterMovementComponent::ResetPose()
 {
 	GetOwner()->SetActorLocation(SavedPoseLocation);
+}
+
+void UMyCharacterMovementComponent::SprintPressed()
+{
+	Safe_bWantsToSprint = true;
+}
+
+void UMyCharacterMovementComponent::SprintReleased()
+{
+	Safe_bWantsToSprint = false;
+}
+
+void UMyCharacterMovementComponent::OnMovementUpdated(float DeltaSeconds, const FVector& OldLocation, const FVector& OldVelocity)
+{
+	Super::OnMovementUpdated(DeltaSeconds, OldLocation, OldVelocity);
+
+	if (MovementMode == MOVE_Walking)
+	{
+		if (Safe_bWantsToSprint)
+		{
+			MaxWalkSpeed = Sprint_MaxWalkSpeed;
+		}
+		else
+		{
+			MaxWalkSpeed = Walk_MaxWalkSpeed;
+		}
+	}
 }
 
 void UMyCharacterMovementComponent::SimulatedTick(float DeltaSeconds) // on the same Tick, executes earlier than AddSnapshot()

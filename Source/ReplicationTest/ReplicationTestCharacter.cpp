@@ -160,6 +160,9 @@ void AReplicationTestCharacter::SetupPlayerInputComponent(class UInputComponent*
 
 	PlayerInputComponent->BindAction("Shoot", IE_Pressed, this, &AReplicationTestCharacter::Shoot);
 
+	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &AReplicationTestCharacter::SprintPressed);
+	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &AReplicationTestCharacter::SprintReleased);
+
 	PlayerInputComponent->BindAxis("MoveForward", this, &AReplicationTestCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &AReplicationTestCharacter::MoveRight);
 
@@ -202,15 +205,24 @@ void AReplicationTestCharacter::TouchStopped(ETouchIndex::Type FingerIndex, FVec
 
 void AReplicationTestCharacter::Shoot()
 {
-	//GEngine->AddOnScreenDebugMessage(-1, 60.0f, FColor::Yellow, FString::Printf(TEXT("Shoot(): %f"), GetWorld()->GetTimeSeconds()));
-	ServerShootRPC(GetWorld()->GetGameState<AReplicationTestGameState>()->PreviousInterpolationTime);
+	GEngine->AddOnScreenDebugMessage(-1, 60.0f, FColor::Yellow, FString::Printf(TEXT("Client-side pos: [%f %f %f]"), GetActorLocation().X, GetActorLocation().Y, GetActorLocation().Z));
+	
+	ServerShootRPC();
 }
 
-void AReplicationTestCharacter::ServerShootRPC_Implementation(float ClientTime)
+void AReplicationTestCharacter::SprintPressed()
 {
-	float RewindTime = GetWorld()->GetTimeSeconds() - GetPlayerState()->ExactPingV2 * 0.001 - 0.20;
-	float DiffMs = (RewindTime-ClientTime) * 1000.0;
-	UE_LOG(LogTemp, Warning, TEXT("ShootRPC. ClientTime: %f, RewindTime: %f, Ping: %f, Diff: %f ms"), ClientTime, RewindTime, GetPlayerState()->ExactPingV2, DiffMs);
+	GetMyCharacterMovementComponent()->SprintPressed();
+}
+
+void AReplicationTestCharacter::SprintReleased()
+{
+	GetMyCharacterMovementComponent()->SprintReleased();
+}
+
+void AReplicationTestCharacter::ServerShootRPC_Implementation()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Server-side pos: [%f %f %f]"), GetActorLocation().X, GetActorLocation().Y, GetActorLocation().Z)
 }
 
 void AReplicationTestCharacter::TurnAtRate(float Rate)
