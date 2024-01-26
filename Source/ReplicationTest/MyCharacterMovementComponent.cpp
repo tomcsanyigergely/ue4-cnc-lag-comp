@@ -40,6 +40,7 @@ void UMyCharacterMovementComponent::FSavedMove_MyCharacter::SetMoveFor(ACharacte
 	UMyCharacterMovementComponent* CharacterMovement = Cast<UMyCharacterMovementComponent>(C->GetCharacterMovement());
 
 	Saved_bWantsToSprint = CharacterMovement->Safe_bWantsToSprint;
+	Saved_bWantsToShoot = CharacterMovement->Safe_bWantsToShoot;
 }
 
 void UMyCharacterMovementComponent::FSavedMove_MyCharacter::PrepMoveFor(ACharacter* C)
@@ -49,6 +50,7 @@ void UMyCharacterMovementComponent::FSavedMove_MyCharacter::PrepMoveFor(ACharact
 	UMyCharacterMovementComponent* CharacterMovement = Cast<UMyCharacterMovementComponent>(C->GetCharacterMovement());
 
 	CharacterMovement->Safe_bWantsToSprint = Saved_bWantsToSprint;
+	CharacterMovement->Safe_bWantsToShoot = Saved_bWantsToShoot;
 }
 
 UMyCharacterMovementComponent::FNetworkPredictionData_Client_MyCharacter::FNetworkPredictionData_Client_MyCharacter(const UCharacterMovementComponent& ClientMovement) : Super(ClientMovement)
@@ -202,6 +204,17 @@ void UMyCharacterMovementComponent::SprintReleased()
 	Safe_bWantsToSprint = false;
 }
 
+void UMyCharacterMovementComponent::TryShoot()
+{
+	Safe_bWantsToShoot = true;
+}
+
+void UMyCharacterMovementComponent::ServerShootRPC_Implementation()
+{
+	Safe_bWantsToShoot = true;
+	UE_LOG(LogTemp, Warning, TEXT("SERVER_SHOOT_RPC"))
+}
+
 void UMyCharacterMovementComponent::OnMovementUpdated(float DeltaSeconds, const FVector& OldLocation, const FVector& OldVelocity)
 {
 	Super::OnMovementUpdated(DeltaSeconds, OldLocation, OldVelocity);
@@ -257,6 +270,21 @@ void UMyCharacterMovementComponent::SimulatedTick(float DeltaSeconds) // on the 
 			GetWorld()->GetGameState<AReplicationTestGameState>()->CurrentInterpolationTime = CurrentInterpolationTime;
 		}
 		CurrentInterpolationTime += DeltaSeconds * InterpolationMultiplier;
+	}
+}
+
+void UMyCharacterMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSeconds)
+{
+	Super::UpdateCharacterStateBeforeMovement(DeltaSeconds);
+
+	if (Safe_bWantsToShoot)
+	{
+		if (!CharacterOwner->HasAuthority()) { ServerShootRPC(); }
+		
+		UE_LOG(LogTemp, Warning, TEXT("Server-side pos: [%f %f %f]"), GetOwner()->GetActorLocation().X, GetOwner()->GetActorLocation().Y, GetOwner()->GetActorLocation().Z)
+		GEngine->AddOnScreenDebugMessage(-1, 60.0f, FColor::Red, FString::Printf(TEXT("Client-side pos: [%f %f %f]"), GetOwner()->GetActorLocation().X, GetOwner()->GetActorLocation().Y, GetOwner()->GetActorLocation().Z));
+		
+		Safe_bWantsToShoot = false;
 	}
 }
 

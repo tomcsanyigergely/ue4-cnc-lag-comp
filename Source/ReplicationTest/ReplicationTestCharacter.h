@@ -77,9 +77,6 @@ protected:
 	void SprintPressed();
 	void SprintReleased();
 
-	UFUNCTION(Server, Reliable)
-	void ServerShootRPC();
-
 protected:
 	// APawn interface
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;

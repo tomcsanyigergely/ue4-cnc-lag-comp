@@ -205,9 +205,7 @@ void AReplicationTestCharacter::TouchStopped(ETouchIndex::Type FingerIndex, FVec
 
 void AReplicationTestCharacter::Shoot()
 {
-	GEngine->AddOnScreenDebugMessage(-1, 60.0f, FColor::Yellow, FString::Printf(TEXT("Client-side pos: [%f %f %f]"), GetActorLocation().X, GetActorLocation().Y, GetActorLocation().Z));
-	
-	ServerShootRPC();
+	GetMyCharacterMovementComponent()->TryShoot();
 }
 
 void AReplicationTestCharacter::SprintPressed()
@@ -218,11 +216,6 @@ void AReplicationTestCharacter::SprintPressed()
 void AReplicationTestCharacter::SprintReleased()
 {
 	GetMyCharacterMovementComponent()->SprintReleased();
-}
-
-void AReplicationTestCharacter::ServerShootRPC_Implementation()
-{
-	UE_LOG(LogTemp, Warning, TEXT("Server-side pos: [%f %f %f]"), GetActorLocation().X, GetActorLocation().Y, GetActorLocation().Z)
 }
 
 void AReplicationTestCharacter::TurnAtRate(float Rate)

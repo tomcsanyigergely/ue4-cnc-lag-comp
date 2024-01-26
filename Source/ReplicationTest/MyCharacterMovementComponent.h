@@ -20,6 +20,7 @@ class REPLICATIONTEST_API UMyCharacterMovementComponent : public UCharacterMovem
 		typedef FSavedMove_Character Super;
 
 		uint8 Saved_bWantsToSprint:1;
+		uint8 Saved_bWantsToShoot:1;
 
 		virtual bool CanCombineWith(const FSavedMovePtr& NewMove, ACharacter* InCharacter, float MaxDelta) const override;
 		virtual void Clear() override;
@@ -39,6 +40,7 @@ class REPLICATIONTEST_API UMyCharacterMovementComponent : public UCharacterMovem
 	};
 
 	bool Safe_bWantsToSprint;
+	bool Safe_bWantsToShoot;
 	
 public:
 	virtual FNetworkPredictionData_Client* GetPredictionData_Client() const override;
@@ -90,9 +92,13 @@ public:
 	void SprintPressed();
 	void SprintReleased();
 
+	void TryShoot();
+	UFUNCTION(Server, Reliable) void ServerShootRPC();
+
 protected:
 	virtual void SimulatedTick(float DeltaSeconds) override;
 
+	virtual void UpdateCharacterStateBeforeMovement(float DeltaSeconds) override;
 	virtual void OnMovementUpdated(float DeltaSeconds, const FVector& OldLocation, const FVector& OldVelocity) override;
 
 private:
