@@ -75,6 +75,9 @@ private:
 
 	FVector SavedPoseLocation;
 
+	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
+	float AnimPlaybackTime = 0.0;
+
 public:
 	float LastInterp;
 	float LastRewindInterp;

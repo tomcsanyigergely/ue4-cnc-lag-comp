@@ -247,6 +247,9 @@ void UMyCharacterMovementComponent::SimulatedTick(float DeltaSeconds) // on the 
 		if (NumSnapshots == 1)
 		{
 			GetOwner()->SetActorLocation(SnapshotBuffer[BeginIndex].Position);
+			AnimPlaybackTime = SnapshotBuffer[BeginIndex].AnimPlaybackTime;
+			GetOwner()->FindComponentByClass<USkeletalMeshComponent>()->GetAnimInstance()->UpdateAnimation(0.0, false);
+			GetOwner()->FindComponentByClass<USkeletalMeshComponent>()->RefreshBoneTransforms();
 			GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Red, FString::Printf(TEXT("UH OH")));
 		}
 		else
@@ -255,12 +258,19 @@ void UMyCharacterMovementComponent::SimulatedTick(float DeltaSeconds) // on the 
 			{
 				float Interp = FMath::Clamp((CurrentInterpolationTime - SnapshotBuffer[BeginIndex].Timestamp) / (SnapshotBuffer[static_cast<uint8>(BeginIndex+1)].Timestamp - SnapshotBuffer[BeginIndex].Timestamp), 0.0, 1.0);
 				FVector LerpPosition = FMath::Lerp(SnapshotBuffer[BeginIndex].Position, SnapshotBuffer[static_cast<uint8>(BeginIndex+1)].Position, Interp);
+				float LerpAnimPlaybackTime = FMath::Lerp(SnapshotBuffer[BeginIndex].AnimPlaybackTime, SnapshotBuffer[static_cast<uint8>(BeginIndex+1)].AnimPlaybackTime, Interp);
 				GetOwner()->SetActorLocation(LerpPosition);
+				AnimPlaybackTime = LerpAnimPlaybackTime;
+				GetOwner()->FindComponentByClass<USkeletalMeshComponent>()->GetAnimInstance()->UpdateAnimation(0.0, false);
+				GetOwner()->FindComponentByClass<USkeletalMeshComponent>()->RefreshBoneTransforms();
 				LastInterp = Interp;
 			}
 			else
 			{
 				GetOwner()->SetActorLocation(SnapshotBuffer[static_cast<uint8>(BeginIndex+1)].Position);
+				AnimPlaybackTime = SnapshotBuffer[static_cast<uint8>(BeginIndex+1)].AnimPlaybackTime;
+				GetOwner()->FindComponentByClass<USkeletalMeshComponent>()->GetAnimInstance()->UpdateAnimation(0.0, false);
+				GetOwner()->FindComponentByClass<USkeletalMeshComponent>()->RefreshBoneTransforms();
 			}
 		}
 

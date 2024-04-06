@@ -6,6 +6,7 @@ struct FPlayerSnapshot
 {
 	uint8 PlayerId;
 	FVector Position;
+	float AnimPlaybackTime;
 	float Timestamp = 0; // used locally only, not serialized
 };
 

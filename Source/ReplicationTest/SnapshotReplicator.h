@@ -32,4 +32,7 @@ public:
 private:
 	UFUNCTION()
 	void ShowPing();
+
+	/* GetOwner()->FindComponentByClass<USkeletalMeshComponent>()->GetAnimInstance()->UpdateAnimation(DeltaTime, false);
+	GetOwner()->FindComponentByClass<USkeletalMeshComponent>()->RefreshBoneTransforms();*/
 };

@@ -58,7 +58,10 @@ void ASnapshotReplicator::Tick(float DeltaTime)
 				const AReplicationTestPlayerState* RepTestPlayerState = Cast<AReplicationTestPlayerState>(PlayerState);
 				if (IsValid(Character) && IsValid(RepTestPlayerState) && RepTestPlayerState->RepTestPlayerId != 0)
 				{
-					FPlayerSnapshot PlayerSnapshot{RepTestPlayerState->RepTestPlayerId, Character->GetActorLocation()};
+					FPlayerSnapshot PlayerSnapshot;
+					PlayerSnapshot.PlayerId = RepTestPlayerState->RepTestPlayerId;
+					PlayerSnapshot.Position = Character->GetActorLocation();
+					PlayerSnapshot.AnimPlaybackTime = ServerTime;
 					SnapshotPacketBits.PlayerSnapshots.Add(PlayerSnapshot);
 
 					Character->GetMyCharacterMovementComponent()->AddServerSideSnapshot(ServerTime, PlayerSnapshot);
