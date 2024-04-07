@@ -2,6 +2,7 @@
 
 #include "MyCharacterMovementComponent.h"
 
+#include "ReplicationTestCharacter.h"
 #include "ReplicationTestGameState.h"
 #include "GameFramework/Character.h"
 
@@ -185,6 +186,11 @@ void UMyCharacterMovementComponent::RewindPose(float RewindTime)
 		float Interp = FMath::Clamp((RewindTime - SnapshotBuffer[SnapshotIndex].Timestamp) / (SnapshotBuffer[static_cast<uint8>(SnapshotIndex+1)].Timestamp - SnapshotBuffer[SnapshotIndex].Timestamp), 0.0f, 1.0f);
 		FVector LerpPosition = FMath::Lerp(SnapshotBuffer[SnapshotIndex].Position, SnapshotBuffer[static_cast<uint8>(SnapshotIndex+1)].Position, Interp);
 		GetOwner()->SetActorLocation(LerpPosition);
+
+		AnimPlaybackTime = FMath::Lerp(SnapshotBuffer[SnapshotIndex].AnimPlaybackTime, SnapshotBuffer[static_cast<uint8>(SnapshotIndex+1)].AnimPlaybackTime, Interp);
+		GetOwner<AReplicationTestCharacter>()->LagCompensatedSkeleton->GetAnimInstance()->UpdateAnimation(0.0, false);
+		GetOwner<AReplicationTestCharacter>()->LagCompensatedSkeleton->RefreshBoneTransforms();
+		
 		LastRewindInterp = Interp;
 	}
 }
@@ -248,8 +254,8 @@ void UMyCharacterMovementComponent::SimulatedTick(float DeltaSeconds) // on the 
 		{
 			GetOwner()->SetActorLocation(SnapshotBuffer[BeginIndex].Position);
 			AnimPlaybackTime = SnapshotBuffer[BeginIndex].AnimPlaybackTime;
-			GetOwner()->FindComponentByClass<USkeletalMeshComponent>()->GetAnimInstance()->UpdateAnimation(0.0, false);
-			GetOwner()->FindComponentByClass<USkeletalMeshComponent>()->RefreshBoneTransforms();
+			GetOwner<AReplicationTestCharacter>()->LagCompensatedSkeleton->GetAnimInstance()->UpdateAnimation(0.0, false);
+			GetOwner<AReplicationTestCharacter>()->LagCompensatedSkeleton->RefreshBoneTransforms();
 			GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Red, FString::Printf(TEXT("UH OH")));
 		}
 		else
@@ -261,16 +267,16 @@ void UMyCharacterMovementComponent::SimulatedTick(float DeltaSeconds) // on the 
 				float LerpAnimPlaybackTime = FMath::Lerp(SnapshotBuffer[BeginIndex].AnimPlaybackTime, SnapshotBuffer[static_cast<uint8>(BeginIndex+1)].AnimPlaybackTime, Interp);
 				GetOwner()->SetActorLocation(LerpPosition);
 				AnimPlaybackTime = LerpAnimPlaybackTime;
-				GetOwner()->FindComponentByClass<USkeletalMeshComponent>()->GetAnimInstance()->UpdateAnimation(0.0, false);
-				GetOwner()->FindComponentByClass<USkeletalMeshComponent>()->RefreshBoneTransforms();
+				GetOwner<AReplicationTestCharacter>()->LagCompensatedSkeleton->GetAnimInstance()->UpdateAnimation(0.0, false);
+				GetOwner<AReplicationTestCharacter>()->LagCompensatedSkeleton->RefreshBoneTransforms();
 				LastInterp = Interp;
 			}
 			else
 			{
 				GetOwner()->SetActorLocation(SnapshotBuffer[static_cast<uint8>(BeginIndex+1)].Position);
 				AnimPlaybackTime = SnapshotBuffer[static_cast<uint8>(BeginIndex+1)].AnimPlaybackTime;
-				GetOwner()->FindComponentByClass<USkeletalMeshComponent>()->GetAnimInstance()->UpdateAnimation(0.0, false);
-				GetOwner()->FindComponentByClass<USkeletalMeshComponent>()->RefreshBoneTransforms();
+				GetOwner<AReplicationTestCharacter>()->LagCompensatedSkeleton->GetAnimInstance()->UpdateAnimation(0.0, false);
+				GetOwner<AReplicationTestCharacter>()->LagCompensatedSkeleton->RefreshBoneTransforms();
 			}
 		}
 

@@ -23,6 +23,9 @@ class AReplicationTestCharacter : public ACharacter
 public:
 	UPROPERTY(BlueprintReadWrite)
 	USceneComponent* Head;
+
+	UPROPERTY(BlueprintReadWrite)
+	USkeletalMeshComponent* LagCompensatedSkeleton;
 	
 public:
 	AReplicationTestCharacter(const FObjectInitializer& ObjectInitializer);

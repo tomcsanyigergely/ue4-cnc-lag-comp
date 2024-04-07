@@ -61,7 +61,7 @@ void ASnapshotReplicator::Tick(float DeltaTime)
 					FPlayerSnapshot PlayerSnapshot;
 					PlayerSnapshot.PlayerId = RepTestPlayerState->RepTestPlayerId;
 					PlayerSnapshot.Position = Character->GetActorLocation();
-					PlayerSnapshot.AnimPlaybackTime = ServerTime;
+					PlayerSnapshot.AnimPlaybackTime = 2.0 * ServerTime;
 					SnapshotPacketBits.PlayerSnapshots.Add(PlayerSnapshot);
 
 					Character->GetMyCharacterMovementComponent()->AddServerSideSnapshot(ServerTime, PlayerSnapshot);
