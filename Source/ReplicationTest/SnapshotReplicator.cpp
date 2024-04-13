@@ -7,6 +7,7 @@
 #include "ReplicationTestCharacter.h"
 #include "ReplicationTestGameState.h"
 #include "ReplicationTestPlayerState.h"
+#include "Animation/AnimNode_StateMachine.h"
 #include "GameFramework/GameStateBase.h"
 #include "GameFramework/PlayerState.h"
 
@@ -42,6 +43,8 @@ void ASnapshotReplicator::Tick(float DeltaTime)
 	if (GetLocalRole() == ROLE_Authority)
 	{
 		//GEngine->AddOnScreenDebugMessage(-1, 60.0f, FColor::Yellow, FString::Printf(TEXT("SnapshotReplicator::Tick(): %f"), GetWorld()->GetTimeSeconds()));
+
+		//UE_LOG(LogTemp, Warning, TEXT("SnapshotReplicator::Tick(): %f"), GetWorld()->GetTimeSeconds())
 		
 		static int tickCount = 0;
 
@@ -62,9 +65,62 @@ void ASnapshotReplicator::Tick(float DeltaTime)
 					PlayerSnapshot.PlayerId = RepTestPlayerState->RepTestPlayerId;
 					PlayerSnapshot.Position = Character->GetActorLocation();
 					PlayerSnapshot.AnimPlaybackTime = 2.0 * ServerTime;
+
+					UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();				
+
+					int32 MachineIndex;
+					const FBakedAnimationStateMachine* BakedAnimationStateMachine;
+					AnimInstance->GetStateMachineIndexAndDescription("Default", MachineIndex, &BakedAnimationStateMachine);
+
+					auto States = BakedAnimationStateMachine->States;
+
+					for(auto State : States)
+					{
+						int32 StateIndex = BakedAnimationStateMachine->FindStateIndex(State.StateName);
+						float StateWeight = AnimInstance->GetInstanceStateWeight(MachineIndex, StateIndex);
+
+						if (StateWeight > 0)
+						{
+							if (State.StateName == "Idle/Run")
+							{
+								FAnimSnapshot AnimSnapshot;
+								AnimSnapshot.Id = 1;
+								AnimSnapshot.Time = AnimInstance->GetInstanceAssetPlayerTime(State.PlayerNodeIndices[0]);
+								AnimSnapshot.Weight = StateWeight;
+								PlayerSnapshot.Anim.Add(AnimSnapshot);
+							}
+							else if (State.StateName == "JumpStart")
+							{
+								FAnimSnapshot AnimSnapshot;
+								AnimSnapshot.Id = 2;
+								AnimSnapshot.Time = AnimInstance->GetInstanceAssetPlayerTime(State.PlayerNodeIndices[0]);
+								AnimSnapshot.Weight = StateWeight;
+								PlayerSnapshot.Anim.Add(AnimSnapshot);
+							}
+							else if (State.StateName == "JumpLoop")
+							{
+								FAnimSnapshot AnimSnapshot;
+								AnimSnapshot.Id = 3;
+								AnimSnapshot.Time = AnimInstance->GetInstanceAssetPlayerTime(State.PlayerNodeIndices[0]);
+								AnimSnapshot.Weight = StateWeight;
+								PlayerSnapshot.Anim.Add(AnimSnapshot);
+							}
+							else if (State.StateName == "JumpEnd")
+							{
+								FAnimSnapshot AnimSnapshot;
+								AnimSnapshot.Id = 4;
+								AnimSnapshot.Time = AnimInstance->GetInstanceAssetPlayerTime(State.PlayerNodeIndices[0]);
+								AnimSnapshot.Weight = StateWeight;
+								PlayerSnapshot.Anim.Add(AnimSnapshot);
+							}
+						}
+					}
+					
 					SnapshotPacketBits.PlayerSnapshots.Add(PlayerSnapshot);
 
 					Character->GetMyCharacterMovementComponent()->AddServerSideSnapshot(ServerTime, PlayerSnapshot);
+
+					//UE_LOG(LogTemp, Warning, TEXT("StateWeights: %f %f %f %f"), StateWeights[0], StateWeights[1], StateWeights[2], StateWeights[3]);
 				}
 			}
 

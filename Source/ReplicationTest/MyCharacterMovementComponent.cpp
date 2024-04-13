@@ -161,9 +161,25 @@ void UMyCharacterMovementComponent::AddServerSideSnapshot(float Timestamp, FPlay
 	EndIndex++;
 }
 
+bool UMyCharacterMovementComponent::ForcePositionUpdate(float DeltaTime)
+{
+	static int i = 0;
+
+	if (GetWorld()->IsServer() && i % 10 == 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("FORCE"))
+	}
+
+	i++;
+	
+	return Super::ForcePositionUpdate(DeltaTime);
+
+	
+}
+
 void UMyCharacterMovementComponent::TickComponent(float DeltaTime, ELevelTick TickType,
                                                   FActorComponentTickFunction* ThisTickFunction)
-{
+{	
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	//GEngine->AddOnScreenDebugMessage(-1, 60.0f, FColor::Yellow, FString::Printf(TEXT("CMC::TickComponent(): %f"), GetWorld()->GetTimeSeconds()));
@@ -188,6 +204,7 @@ void UMyCharacterMovementComponent::RewindPose(float RewindTime)
 		GetOwner()->SetActorLocation(LerpPosition);
 
 		AnimPlaybackTime = FMath::Lerp(SnapshotBuffer[SnapshotIndex].AnimPlaybackTime, SnapshotBuffer[static_cast<uint8>(SnapshotIndex+1)].AnimPlaybackTime, Interp);
+		
 		GetOwner<AReplicationTestCharacter>()->LagCompensatedSkeleton->GetAnimInstance()->UpdateAnimation(0.0, false);
 		GetOwner<AReplicationTestCharacter>()->LagCompensatedSkeleton->RefreshBoneTransforms();
 		
@@ -254,12 +271,95 @@ void UMyCharacterMovementComponent::SimulatedTick(float DeltaSeconds) // on the 
 		{
 			GetOwner()->SetActorLocation(SnapshotBuffer[BeginIndex].Position);
 			AnimPlaybackTime = SnapshotBuffer[BeginIndex].AnimPlaybackTime;
+
+			// ANIM SECTION BEGIN
+
+			IdleTime = 0;
+			IdleWeight = 0;
+
+			JumpStartTime = 0;
+			JumpStartWeight = 0;
+
+			JumpLoopTime = 0;
+			JumpLoopWeight = 0;
+
+			JumpEndTime = 0;
+			JumpEndWeight = 0;
+
+			for(auto AnimSnapshot : SnapshotBuffer[BeginIndex].Anim)
+			{
+				switch (AnimSnapshot.Id)
+				{
+				case 1:
+					IdleTime = AnimSnapshot.Time;
+					IdleWeight = AnimSnapshot.Weight;
+					break;
+				case 2:
+					JumpStartTime = AnimSnapshot.Time;
+					JumpStartWeight = AnimSnapshot.Weight;
+					break;
+				case 3:
+					JumpLoopTime = AnimSnapshot.Time;
+					JumpLoopWeight = AnimSnapshot.Weight;
+					break;
+				case 4:
+					JumpEndTime = AnimSnapshot.Time;
+					JumpEndWeight = AnimSnapshot.Weight;
+					break;
+				default:
+					break;
+				}
+			}
+
+			// ANIM SECTION END
+			
 			GetOwner<AReplicationTestCharacter>()->LagCompensatedSkeleton->GetAnimInstance()->UpdateAnimation(0.0, false);
 			GetOwner<AReplicationTestCharacter>()->LagCompensatedSkeleton->RefreshBoneTransforms();
 			GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Red, FString::Printf(TEXT("UH OH")));
 		}
 		else
 		{
+			// ANIM SECTION BEGIN
+			
+			IdleTime = 0;
+			IdleWeight = 0;
+
+			JumpStartTime = 0;
+			JumpStartWeight = 0;
+
+			JumpLoopTime = 0;
+			JumpLoopWeight = 0;
+
+			JumpEndTime = 0;
+			JumpEndWeight = 0;
+
+			for(auto AnimSnapshot : SnapshotBuffer[static_cast<uint8>(BeginIndex+1)].Anim)
+			{
+				switch (AnimSnapshot.Id)
+				{
+				case 1:
+					IdleTime = AnimSnapshot.Time;
+					IdleWeight = AnimSnapshot.Weight;
+					break;
+				case 2:
+					JumpStartTime = AnimSnapshot.Time;
+					JumpStartWeight = AnimSnapshot.Weight;
+					break;
+				case 3:
+					JumpLoopTime = AnimSnapshot.Time;
+					JumpLoopWeight = AnimSnapshot.Weight;
+					break;
+				case 4:
+					JumpEndTime = AnimSnapshot.Time;
+					JumpEndWeight = AnimSnapshot.Weight;
+					break;
+				default:
+					break;
+				}
+			}
+
+			// ANIM SECTION END
+			
 			if (SnapshotBuffer[BeginIndex].Timestamp != 0)
 			{
 				float Interp = FMath::Clamp((CurrentInterpolationTime - SnapshotBuffer[BeginIndex].Timestamp) / (SnapshotBuffer[static_cast<uint8>(BeginIndex+1)].Timestamp - SnapshotBuffer[BeginIndex].Timestamp), 0.0, 1.0);
@@ -302,6 +402,13 @@ void UMyCharacterMovementComponent::UpdateCharacterStateBeforeMovement(float Del
 		
 		Safe_bWantsToShoot = false;
 	}
+}
+
+void UMyCharacterMovementComponent::UpdateCharacterStateAfterMovement(float DeltaSeconds)
+{
+	Super::UpdateCharacterStateAfterMovement(DeltaSeconds);
+
+	
 }
 
 double UMyCharacterMovementComponent::CalculateInterpolationMultiplier()

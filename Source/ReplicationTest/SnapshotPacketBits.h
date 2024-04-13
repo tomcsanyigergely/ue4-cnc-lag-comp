@@ -2,12 +2,22 @@
 
 #include "SnapshotPacketBits.generated.h"
 
+struct FAnimSnapshot
+{
+	uint8 Id;
+	float Time;
+	float Weight;
+};
+
 struct FPlayerSnapshot
 {
 	uint8 PlayerId;
 	FVector Position;
 	float AnimPlaybackTime;
-	float Timestamp = 0; // used locally only, not serialized
+	TArray<FAnimSnapshot> Anim;
+
+	// used locally only, not serialized:
+	float Timestamp = 0;
 };
 
 USTRUCT()

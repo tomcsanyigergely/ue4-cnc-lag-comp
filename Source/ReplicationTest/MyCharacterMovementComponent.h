@@ -78,12 +78,38 @@ private:
 	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
 	float AnimPlaybackTime = 0.0;
 
+	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
+	float IdleTime = 0.0;
+
+	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
+	float IdleWeight = 0.0;
+
+	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
+	float JumpStartTime = 0.0;
+
+	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
+	float JumpStartWeight = 0.0;
+
+	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
+	float JumpLoopTime = 0.0;
+
+	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
+	float JumpLoopWeight = 0.0;
+
+	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
+	float JumpEndTime = 0.0;
+	
+	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
+	float JumpEndWeight = 0.0;
+
 public:
 	float LastInterp;
 	float LastRewindInterp;
 	
 	void AddClientSideSnapshot(float Timestamp, FPlayerSnapshot PlayerSnapshot);
 	void AddServerSideSnapshot(float Timestamp, FPlayerSnapshot PlayerSnapshot);
+
+	virtual bool ForcePositionUpdate(float DeltaTime) override;
 
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
@@ -102,6 +128,7 @@ protected:
 	virtual void SimulatedTick(float DeltaSeconds) override;
 
 	virtual void UpdateCharacterStateBeforeMovement(float DeltaSeconds) override;
+	virtual void UpdateCharacterStateAfterMovement(float DeltaSeconds) override;
 	virtual void OnMovementUpdated(float DeltaSeconds, const FVector& OldLocation, const FVector& OldVelocity) override;
 
 private:
