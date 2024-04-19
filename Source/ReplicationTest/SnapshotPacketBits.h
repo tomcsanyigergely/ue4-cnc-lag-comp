@@ -9,12 +9,21 @@ struct FAnimSnapshot
 	float Weight;
 };
 
+struct FBlendSpaceAnimSnapshot
+{
+	uint8 Id;
+	float NormalizedTime;
+	float Weight;
+	float NormalizedBlendX;
+};
+
 struct FPlayerSnapshot
 {
 	uint8 PlayerId;
 	FVector Position;
 	float AnimPlaybackTime;
 	TArray<FAnimSnapshot> Anim;
+	TArray<FBlendSpaceAnimSnapshot> BlendAnim;
 
 	// used locally only, not serialized:
 	float Timestamp = 0;

@@ -313,7 +313,7 @@ void UMyCharacterMovementComponent::SimulatedTick(float DeltaSeconds) // on the 
 
 			// ANIM SECTION END
 			
-			GetOwner<AReplicationTestCharacter>()->LagCompensatedSkeleton->GetAnimInstance()->UpdateAnimation(0.0, false);
+			GetOwner<AReplicationTestCharacter>()->LagCompensatedSkeleton->GetAnimInstance()->UpdateAnimation(DeltaSeconds, false);
 			GetOwner<AReplicationTestCharacter>()->LagCompensatedSkeleton->RefreshBoneTransforms();
 			GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Red, FString::Printf(TEXT("UH OH")));
 		}
@@ -321,7 +321,7 @@ void UMyCharacterMovementComponent::SimulatedTick(float DeltaSeconds) // on the 
 		{
 			// ANIM SECTION BEGIN
 			
-			IdleTime = 0;
+			/*IdleTime = 0;
 			IdleWeight = 0;
 
 			JumpStartTime = 0;
@@ -356,7 +356,7 @@ void UMyCharacterMovementComponent::SimulatedTick(float DeltaSeconds) // on the 
 				default:
 					break;
 				}
-			}
+			}*/
 
 			// ANIM SECTION END
 			
@@ -367,7 +367,8 @@ void UMyCharacterMovementComponent::SimulatedTick(float DeltaSeconds) // on the 
 				float LerpAnimPlaybackTime = FMath::Lerp(SnapshotBuffer[BeginIndex].AnimPlaybackTime, SnapshotBuffer[static_cast<uint8>(BeginIndex+1)].AnimPlaybackTime, Interp);
 				GetOwner()->SetActorLocation(LerpPosition);
 				AnimPlaybackTime = LerpAnimPlaybackTime;
-				GetOwner<AReplicationTestCharacter>()->LagCompensatedSkeleton->GetAnimInstance()->UpdateAnimation(0.0, false);
+				InterpolateAnimation(SnapshotBuffer[BeginIndex], SnapshotBuffer[static_cast<uint8>(BeginIndex+1)], Interp);
+				GetOwner<AReplicationTestCharacter>()->LagCompensatedSkeleton->GetAnimInstance()->UpdateAnimation(DeltaSeconds, false);
 				GetOwner<AReplicationTestCharacter>()->LagCompensatedSkeleton->RefreshBoneTransforms();
 				LastInterp = Interp;
 			}
@@ -375,7 +376,7 @@ void UMyCharacterMovementComponent::SimulatedTick(float DeltaSeconds) // on the 
 			{
 				GetOwner()->SetActorLocation(SnapshotBuffer[static_cast<uint8>(BeginIndex+1)].Position);
 				AnimPlaybackTime = SnapshotBuffer[static_cast<uint8>(BeginIndex+1)].AnimPlaybackTime;
-				GetOwner<AReplicationTestCharacter>()->LagCompensatedSkeleton->GetAnimInstance()->UpdateAnimation(0.0, false);
+				GetOwner<AReplicationTestCharacter>()->LagCompensatedSkeleton->GetAnimInstance()->UpdateAnimation(DeltaSeconds, false);
 				GetOwner<AReplicationTestCharacter>()->LagCompensatedSkeleton->RefreshBoneTransforms();
 			}
 		}
@@ -439,4 +440,135 @@ double UMyCharacterMovementComponent::CalculateInterpolationMultiplier()
 	}
 
 	return numerator / denominator;
+}
+
+struct AnimInterp
+{
+	float FromTime = 0;
+	float FromWeight = 0;	
+	float ToTime = 0;
+	float ToWeight = 0;
+};
+
+struct BlendSpaceAnimInterp
+{
+	float FromTime = 0;
+	float FromWeight = 0;
+	float ToTime = 0;
+	float ToWeight = 0;
+	float FromBlendSpaceX = 0;
+	float ToBlendSpaceX = 0;	
+};
+
+void UMyCharacterMovementComponent::InterpolateAnimation(const FPlayerSnapshot& FromSnapshot, const FPlayerSnapshot& ToSnapshot, float Alpha)
+{
+	AnimInterp Anims[3];
+
+	for(const FAnimSnapshot& AnimSnapshot : FromSnapshot.Anim)
+	{
+		Anims[AnimSnapshot.Id-2].FromTime = AnimSnapshot.Time;
+		Anims[AnimSnapshot.Id-2].FromWeight = AnimSnapshot.Weight;
+	}
+
+	for(const FAnimSnapshot& AnimSnapshot : ToSnapshot.Anim)
+	{
+		Anims[AnimSnapshot.Id-2].ToTime = AnimSnapshot.Time;
+		Anims[AnimSnapshot.Id-2].ToWeight = AnimSnapshot.Weight;
+	}
+
+	for(AnimInterp& Anim : Anims)
+	{
+		if (Anim.FromWeight == 0 && Anim.ToWeight != 0)
+		{
+			Anim.FromTime = Anim.ToTime;
+		}
+
+		if (Anim.FromWeight != 0 && Anim.ToWeight == 0)
+		{
+			Anim.ToTime = Anim.FromTime;
+		}
+	}
+	
+
+	JumpStartWeight = FMath::Lerp(Anims[0].FromWeight, Anims[0].ToWeight, Alpha);
+	JumpStartTime = FMath::Lerp(Anims[0].FromTime, Anims[0].ToTime, Alpha);
+	
+	JumpLoopWeight = FMath::Lerp(Anims[1].FromWeight, Anims[1].ToWeight, Alpha);
+	if (Anims[1].ToTime < Anims[1].FromTime)
+	{
+		float DeltaNormalizedTime = 1.0f - (Anims[1].FromTime - Anims[1].ToTime);
+		float BeforePart = (1.0f - Anims[1].FromTime) / DeltaNormalizedTime;
+		float AfterPart = Anims[1].ToTime / DeltaNormalizedTime;
+		
+		if (Alpha > BeforePart)
+		{
+			JumpLoopTime = FMath::Lerp(0.0f, Anims[1].ToTime, (Alpha - BeforePart) / AfterPart);
+		}
+		else
+		{
+			JumpLoopTime = FMath::Lerp(Anims[1].FromTime, 1.0f, Alpha / BeforePart);
+		}
+	}
+	else
+	{
+		JumpLoopTime = FMath::Lerp(Anims[1].FromTime, Anims[1].ToTime, Alpha);
+	}
+
+	JumpEndWeight = FMath::Lerp(Anims[2].FromWeight, Anims[2].ToWeight, Alpha);
+	JumpEndTime = FMath::Lerp(Anims[2].FromTime, Anims[2].ToTime, Alpha);
+
+	
+
+	BlendSpaceAnimInterp BlendSpaceAnims[1];
+	
+	for(const FBlendSpaceAnimSnapshot& AnimSnapshot : FromSnapshot.BlendAnim)
+	{
+		BlendSpaceAnims[AnimSnapshot.Id-1].FromTime = AnimSnapshot.NormalizedTime;
+		BlendSpaceAnims[AnimSnapshot.Id-1].FromWeight = AnimSnapshot.Weight;
+		BlendSpaceAnims[AnimSnapshot.Id-1].FromBlendSpaceX = AnimSnapshot.NormalizedBlendX;
+	}
+    
+	for(const FBlendSpaceAnimSnapshot& AnimSnapshot : ToSnapshot.BlendAnim)
+	{
+		BlendSpaceAnims[AnimSnapshot.Id-1].ToTime = AnimSnapshot.NormalizedTime;
+		BlendSpaceAnims[AnimSnapshot.Id-1].ToWeight = AnimSnapshot.Weight;
+		BlendSpaceAnims[AnimSnapshot.Id-1].ToBlendSpaceX = AnimSnapshot.NormalizedBlendX;
+	}
+
+	for(BlendSpaceAnimInterp& Anim : BlendSpaceAnims)
+	{
+		if (Anim.FromWeight == 0 && Anim.ToWeight != 0)
+		{
+			Anim.FromTime = Anim.ToTime;
+			Anim.FromBlendSpaceX = Anim.ToBlendSpaceX;
+		}
+
+		if (Anim.FromWeight != 0 && Anim.ToWeight == 0)
+		{
+			Anim.ToTime = Anim.FromTime;
+			Anim.ToBlendSpaceX = Anim.FromBlendSpaceX;
+		}
+	}
+
+	IdleWeight = FMath::Lerp(BlendSpaceAnims[0].FromWeight, BlendSpaceAnims[0].ToWeight, Alpha);
+	IdleBlendSpaceX = FMath::Lerp(BlendSpaceAnims[0].FromBlendSpaceX, BlendSpaceAnims[0].ToBlendSpaceX, Alpha);
+	if (BlendSpaceAnims[0].ToTime < BlendSpaceAnims[0].FromTime)
+	{
+		float DeltaNormalizedTime = 1.0f - (BlendSpaceAnims[0].FromTime - BlendSpaceAnims[0].ToTime);
+		float BeforePart = (1.0f - BlendSpaceAnims[0].FromTime) / DeltaNormalizedTime;
+		float AfterPart = BlendSpaceAnims[0].ToTime / DeltaNormalizedTime;
+		
+		if (Alpha > BeforePart)
+		{
+			IdleTime = FMath::Lerp(0.0f, BlendSpaceAnims[0].ToTime, (Alpha - BeforePart) / AfterPart);
+		}
+		else
+		{
+			IdleTime = FMath::Lerp(BlendSpaceAnims[0].FromTime, 1.0f, Alpha / BeforePart);
+		}
+	}
+	else
+	{
+		IdleTime = FMath::Lerp(BlendSpaceAnims[0].FromTime, BlendSpaceAnims[0].ToTime, Alpha);
+	}
 }

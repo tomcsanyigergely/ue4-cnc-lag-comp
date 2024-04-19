@@ -37,8 +37,13 @@ void AAimbot::Tick(float DeltaTime)
 	{
 		if (Target != nullptr)
 		{
-			FVector TargetLocation = Target->Head->GetComponentLocation();
+			FVector TargetLocation = Target->GetActorLocation();//->Head->GetComponentLocation();
+			TargetLocation.Z = 0;
+
+			
 			FVector Direction = (TargetLocation - GetActorLocation()).GetSafeNormal();
+			Direction.Z = 0;
+			
 			CameraComponent->SetWorldRotation(UKismetMathLibrary::MakeRotFromX(Direction));
 
 			if (ShootSignal)

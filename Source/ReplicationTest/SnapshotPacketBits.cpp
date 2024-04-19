@@ -16,7 +16,7 @@ bool FSnapshotPacketBits::NetSerialize(FArchive& Ar, UPackageMap* Map, bool& bOu
 			
 			for(int j = 0; j < PlayerSnapshots[i].Anim.Num(); j++)
 			{
-				uint8 LastAnim = (j == PlayerSnapshots[i].Anim.Num()-1);
+				uint8 LastAnim = (j == PlayerSnapshots[i].Anim.Num()-1 && PlayerSnapshots[i].BlendAnim.Num() == 0);
 				Ar.SerializeBits(&LastAnim, 1);
 
 				Ar << PlayerSnapshots[i].Anim[j].Id;
@@ -25,6 +25,21 @@ bool FSnapshotPacketBits::NetSerialize(FArchive& Ar, UPackageMap* Map, bool& bOu
 				if (!LastAnim)
 				{
 					Ar << PlayerSnapshots[i].Anim[j].Weight;
+				}
+			}
+
+			for(int j = 0; j < PlayerSnapshots[i].BlendAnim.Num(); j++)
+			{
+				uint8 LastAnim = (j == PlayerSnapshots[i].BlendAnim.Num()-1);
+				Ar.SerializeBits(&LastAnim, 1);
+
+				Ar << PlayerSnapshots[i].BlendAnim[j].Id;
+				Ar << PlayerSnapshots[i].BlendAnim[j].NormalizedTime;
+				Ar << PlayerSnapshots[i].BlendAnim[j].NormalizedBlendX;
+
+				if (!LastAnim)
+				{
+					Ar << PlayerSnapshots[i].BlendAnim[j].Weight;
 				}
 			}
 		}
@@ -51,24 +66,55 @@ bool FSnapshotPacketBits::NetSerialize(FArchive& Ar, UPackageMap* Map, bool& bOu
 			{
 				Ar.SerializeBits(&LastAnim, 1);
 
-				FAnimSnapshot AnimSnapshot;
+				
 
-				Ar << AnimSnapshot.Id;
-				Ar << AnimSnapshot.Time;
+				uint8 Id;
 
-				if (!LastAnim)
+				Ar << Id;
+
+				if (Id == 1)
 				{
-					Ar << AnimSnapshot.Weight;
-					SumWeights += AnimSnapshot.Weight;
+					FBlendSpaceAnimSnapshot AnimSnapshot;
+					
+					AnimSnapshot.Id = Id;
+					Ar << AnimSnapshot.NormalizedTime;
+					Ar << AnimSnapshot.NormalizedBlendX;
+
+					if (!LastAnim)
+					{
+						Ar << AnimSnapshot.Weight;
+						SumWeights += AnimSnapshot.Weight;
+					}
+					else
+					{
+						AnimSnapshot.Weight = FMath::Clamp(1.0 - SumWeights, 0.0, 1.0);
+					}
+
+					PlayerSnapshots[i].BlendAnim.Add(AnimSnapshot);
 				}
 				else
 				{
-					AnimSnapshot.Weight = FMath::Clamp(1.0 - SumWeights, 0.0, 1.0);
+					FAnimSnapshot AnimSnapshot;
+
+					AnimSnapshot.Id = Id;
+					Ar << AnimSnapshot.Time;
+
+					if (!LastAnim)
+					{
+						Ar << AnimSnapshot.Weight;
+						SumWeights += AnimSnapshot.Weight;
+					}
+					else
+					{
+						AnimSnapshot.Weight = FMath::Clamp(1.0 - SumWeights, 0.0, 1.0);
+					}
+					
+					PlayerSnapshots[i].Anim.Add(AnimSnapshot);
 				}
 
 				//UE_LOG(LogTemp, Warning, TEXT("Anim Snapshot: %d %f %f"), AnimSnapshot.Id, AnimSnapshot.Time, AnimSnapshot.Weight)
 
-				PlayerSnapshots[i].Anim.Add(AnimSnapshot);
+				
 			}
 			while(!LastAnim);
 		}

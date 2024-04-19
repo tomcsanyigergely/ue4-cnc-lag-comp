@@ -85,6 +85,9 @@ private:
 	float IdleWeight = 0.0;
 
 	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
+	float IdleBlendSpaceX = 0.0;
+
+	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
 	float JumpStartTime = 0.0;
 
 	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
@@ -103,6 +106,10 @@ private:
 	float JumpEndWeight = 0.0;
 
 public:
+	UPROPERTY(BlueprintReadWrite)
+	float CopyOfIdleBlendSpaceX;
+
+public:	
 	float LastInterp;
 	float LastRewindInterp;
 	
@@ -133,5 +140,6 @@ protected:
 
 private:
 	double CalculateInterpolationMultiplier();
+	void InterpolateAnimation(const FPlayerSnapshot& FromSnapshot, const FPlayerSnapshot& ToSnapshot, float Alpha);
 };
 

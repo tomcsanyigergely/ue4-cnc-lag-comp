@@ -79,21 +79,22 @@ void ASnapshotReplicator::Tick(float DeltaTime)
 						int32 StateIndex = BakedAnimationStateMachine->FindStateIndex(State.StateName);
 						float StateWeight = AnimInstance->GetInstanceStateWeight(MachineIndex, StateIndex);
 
-						if (StateWeight > 0)
+						if (StateWeight > 0 || true)
 						{
 							if (State.StateName == "Idle/Run")
 							{
-								FAnimSnapshot AnimSnapshot;
+								FBlendSpaceAnimSnapshot AnimSnapshot;
 								AnimSnapshot.Id = 1;
-								AnimSnapshot.Time = AnimInstance->GetInstanceAssetPlayerTime(State.PlayerNodeIndices[0]);
+								AnimSnapshot.NormalizedTime = AnimInstance->GetInstanceAssetPlayerTimeFraction(State.PlayerNodeIndices[0]);
 								AnimSnapshot.Weight = StateWeight;
-								PlayerSnapshot.Anim.Add(AnimSnapshot);
+								AnimSnapshot.NormalizedBlendX = Character->GetMyCharacterMovementComponent()->CopyOfIdleBlendSpaceX;
+								PlayerSnapshot.BlendAnim.Add(AnimSnapshot);
 							}
 							else if (State.StateName == "JumpStart")
 							{
 								FAnimSnapshot AnimSnapshot;
 								AnimSnapshot.Id = 2;
-								AnimSnapshot.Time = AnimInstance->GetInstanceAssetPlayerTime(State.PlayerNodeIndices[0]);
+								AnimSnapshot.Time = AnimInstance->GetInstanceAssetPlayerTimeFraction(State.PlayerNodeIndices[0]);
 								AnimSnapshot.Weight = StateWeight;
 								PlayerSnapshot.Anim.Add(AnimSnapshot);
 							}
@@ -101,7 +102,7 @@ void ASnapshotReplicator::Tick(float DeltaTime)
 							{
 								FAnimSnapshot AnimSnapshot;
 								AnimSnapshot.Id = 3;
-								AnimSnapshot.Time = AnimInstance->GetInstanceAssetPlayerTime(State.PlayerNodeIndices[0]);
+								AnimSnapshot.Time = AnimInstance->GetInstanceAssetPlayerTimeFraction(State.PlayerNodeIndices[0]);
 								AnimSnapshot.Weight = StateWeight;
 								PlayerSnapshot.Anim.Add(AnimSnapshot);
 							}
@@ -109,7 +110,7 @@ void ASnapshotReplicator::Tick(float DeltaTime)
 							{
 								FAnimSnapshot AnimSnapshot;
 								AnimSnapshot.Id = 4;
-								AnimSnapshot.Time = AnimInstance->GetInstanceAssetPlayerTime(State.PlayerNodeIndices[0]);
+								AnimSnapshot.Time = AnimInstance->GetInstanceAssetPlayerTimeFraction(State.PlayerNodeIndices[0]);
 								AnimSnapshot.Weight = StateWeight;
 								PlayerSnapshot.Anim.Add(AnimSnapshot);
 							}
@@ -120,7 +121,7 @@ void ASnapshotReplicator::Tick(float DeltaTime)
 
 					Character->GetMyCharacterMovementComponent()->AddServerSideSnapshot(ServerTime, PlayerSnapshot);
 
-					//UE_LOG(LogTemp, Warning, TEXT("StateWeights: %f %f %f %f"), StateWeights[0], StateWeights[1], StateWeights[2], StateWeights[3]);
+					UE_LOG(LogTemp, Warning, TEXT("AnimTimes: %f %f %f %f"), PlayerSnapshot.BlendAnim[0].NormalizedTime, PlayerSnapshot.Anim[0].Time, PlayerSnapshot.Anim[1].Time, PlayerSnapshot.Anim[2].Time);
 				}
 			}
 
