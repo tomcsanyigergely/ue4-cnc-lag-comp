@@ -63,6 +63,7 @@ void ASnapshotReplicator::Tick(float DeltaTime)
 				{
 					FPlayerSnapshot PlayerSnapshot;
 					PlayerSnapshot.PlayerId = RepTestPlayerState->RepTestPlayerId;
+					PlayerSnapshot.Yaw = Character->GetActorRotation().Yaw;
 					PlayerSnapshot.Position = Character->GetActorLocation();
 					PlayerSnapshot.AnimPlaybackTime = 2.0 * ServerTime;
 

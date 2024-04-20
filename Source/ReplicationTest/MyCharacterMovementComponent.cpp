@@ -364,6 +364,9 @@ void UMyCharacterMovementComponent::SimulatedTick(float DeltaSeconds) // on the 
 			{
 				float Interp = FMath::Clamp((CurrentInterpolationTime - SnapshotBuffer[BeginIndex].Timestamp) / (SnapshotBuffer[static_cast<uint8>(BeginIndex+1)].Timestamp - SnapshotBuffer[BeginIndex].Timestamp), 0.0, 1.0);
 				FVector LerpPosition = FMath::Lerp(SnapshotBuffer[BeginIndex].Position, SnapshotBuffer[static_cast<uint8>(BeginIndex+1)].Position, Interp);
+				FRotator LerpRotation = FQuat::Slerp(FRotator(0.0,  SnapshotBuffer[BeginIndex].Yaw, 0.0).Quaternion(), FRotator(0.0, SnapshotBuffer[static_cast<uint8>(BeginIndex+1)].Yaw, 0.0).Quaternion(), Interp).Rotator();
+				GEngine->AddOnScreenDebugMessage(-1, 30.0f, FColor::Blue, FString::Printf(TEXT("Yaw: %f"), LerpRotation.Yaw));
+				GetOwner()->SetActorRotation(LerpRotation);
 				float LerpAnimPlaybackTime = FMath::Lerp(SnapshotBuffer[BeginIndex].AnimPlaybackTime, SnapshotBuffer[static_cast<uint8>(BeginIndex+1)].AnimPlaybackTime, Interp);
 				GetOwner()->SetActorLocation(LerpPosition);
 				AnimPlaybackTime = LerpAnimPlaybackTime;

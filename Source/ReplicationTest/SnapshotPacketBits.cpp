@@ -12,6 +12,7 @@ bool FSnapshotPacketBits::NetSerialize(FArchive& Ar, UPackageMap* Map, bool& bOu
 		{
 			Ar << PlayerSnapshots[i].PlayerId;
 			PlayerSnapshots[i].Position.NetSerialize(Ar, Map, bOutSuccess);
+			Ar << PlayerSnapshots[i].Yaw;
 			Ar << PlayerSnapshots[i].AnimPlaybackTime;			
 			
 			for(int j = 0; j < PlayerSnapshots[i].Anim.Num(); j++)
@@ -57,6 +58,7 @@ bool FSnapshotPacketBits::NetSerialize(FArchive& Ar, UPackageMap* Map, bool& bOu
 		{
 			Ar << PlayerSnapshots[i].PlayerId;
 			PlayerSnapshots[i].Position.NetSerialize(Ar, Map, bOutSuccess);
+			Ar << PlayerSnapshots[i].Yaw;
 			Ar << PlayerSnapshots[i].AnimPlaybackTime;
 
 			uint8 LastAnim;

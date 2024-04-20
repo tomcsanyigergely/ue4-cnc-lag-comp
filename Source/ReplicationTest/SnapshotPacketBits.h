@@ -24,6 +24,7 @@ struct FPlayerSnapshot
 	float AnimPlaybackTime;
 	TArray<FAnimSnapshot> Anim;
 	TArray<FBlendSpaceAnimSnapshot> BlendAnim;
+	float Yaw;
 
 	// used locally only, not serialized:
 	float Timestamp = 0;
