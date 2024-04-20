@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "MyCharacterMovementComponent.h"
+#include "Components/BoxComponent.h"
 #include "GameFramework/Character.h"
 #include "ReplicationTestCharacter.generated.h"
 
@@ -26,6 +27,9 @@ public:
 
 	UPROPERTY(BlueprintReadWrite)
 	USkeletalMeshComponent* LagCompensatedSkeleton;
+
+	UPROPERTY(BlueprintReadWrite)
+	TArray<UBoxComponent*> Hitbox;
 	
 public:
 	AReplicationTestCharacter(const FObjectInitializer& ObjectInitializer);

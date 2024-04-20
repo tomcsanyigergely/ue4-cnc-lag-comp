@@ -74,6 +74,7 @@ private:
 	int snapshotsReceived = 0;
 
 	FVector SavedPoseLocation;
+	FRotator SavedPoseRotation;
 
 	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
 	float AnimPlaybackTime = 0.0;
@@ -112,6 +113,9 @@ public:
 public:	
 	float LastInterp;
 	float LastRewindInterp;
+
+	FORCEINLINE float GetIdleTime() { return IdleTime; }
+	FORCEINLINE float GetIdleBlendSpaceX() { return IdleBlendSpaceX; }
 	
 	void AddClientSideSnapshot(float Timestamp, FPlayerSnapshot PlayerSnapshot);
 	void AddServerSideSnapshot(float Timestamp, FPlayerSnapshot PlayerSnapshot);

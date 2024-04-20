@@ -122,7 +122,7 @@ void ASnapshotReplicator::Tick(float DeltaTime)
 
 					Character->GetMyCharacterMovementComponent()->AddServerSideSnapshot(ServerTime, PlayerSnapshot);
 
-					UE_LOG(LogTemp, Warning, TEXT("AnimTimes: %f %f %f %f"), PlayerSnapshot.BlendAnim[0].NormalizedTime, PlayerSnapshot.Anim[0].Time, PlayerSnapshot.Anim[1].Time, PlayerSnapshot.Anim[2].Time);
+					//UE_LOG(LogTemp, Warning, TEXT("AnimTimes: %f %f %f %f"), PlayerSnapshot.BlendAnim[0].NormalizedTime, PlayerSnapshot.Anim[0].Time, PlayerSnapshot.Anim[1].Time, PlayerSnapshot.Anim[2].Time);
 				}
 			}
 

@@ -45,4 +45,7 @@ private:
 
 	UFUNCTION(Server, Reliable)
 	void ShootServerRPC(FVector Location, FVector Direction, float TargetRewindTime);
+
+	UFUNCTION(Client, Reliable)
+	void HitboxRPC(const TArray<FVector>& Locations, const TArray<FRotator>& Rotations);
 };

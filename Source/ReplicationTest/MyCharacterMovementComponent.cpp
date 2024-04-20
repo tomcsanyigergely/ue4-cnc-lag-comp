@@ -188,6 +188,7 @@ void UMyCharacterMovementComponent::TickComponent(float DeltaTime, ELevelTick Ti
 void UMyCharacterMovementComponent::RewindPose(float RewindTime)
 {
 	SavedPoseLocation = GetOwner()->GetActorLocation();
+	SavedPoseRotation = GetOwner()->GetActorRotation();
 
 	uint8 SnapshotIndex = static_cast<uint8>(EndIndex-1);
 	while (SnapshotBuffer[SnapshotIndex].Timestamp > RewindTime && SnapshotBuffer[static_cast<uint8>(SnapshotIndex-1)].Timestamp < SnapshotBuffer[SnapshotIndex].Timestamp)
@@ -204,8 +205,13 @@ void UMyCharacterMovementComponent::RewindPose(float RewindTime)
 		GetOwner()->SetActorLocation(LerpPosition);
 
 		AnimPlaybackTime = FMath::Lerp(SnapshotBuffer[SnapshotIndex].AnimPlaybackTime, SnapshotBuffer[static_cast<uint8>(SnapshotIndex+1)].AnimPlaybackTime, Interp);
+
+		FRotator LerpRotation = FQuat::Slerp(FRotator(0.0,  SnapshotBuffer[SnapshotIndex].Yaw, 0.0).Quaternion(), FRotator(0.0, SnapshotBuffer[static_cast<uint8>(SnapshotIndex+1)].Yaw, 0.0).Quaternion(), Interp).Rotator();
+		GetOwner()->SetActorRotation(LerpRotation);
+
+		InterpolateAnimation(SnapshotBuffer[SnapshotIndex], SnapshotBuffer[static_cast<uint8>(SnapshotIndex+1)], Interp);
 		
-		GetOwner<AReplicationTestCharacter>()->LagCompensatedSkeleton->GetAnimInstance()->UpdateAnimation(0.0, false);
+		GetOwner<AReplicationTestCharacter>()->LagCompensatedSkeleton->GetAnimInstance()->UpdateAnimation(0.01, false);
 		GetOwner<AReplicationTestCharacter>()->LagCompensatedSkeleton->RefreshBoneTransforms();
 		
 		LastRewindInterp = Interp;
@@ -215,6 +221,7 @@ void UMyCharacterMovementComponent::RewindPose(float RewindTime)
 void UMyCharacterMovementComponent::ResetPose()
 {
 	GetOwner()->SetActorLocation(SavedPoseLocation);
+	GetOwner()->SetActorRotation(SavedPoseRotation);
 }
 
 void UMyCharacterMovementComponent::SprintPressed()
@@ -313,7 +320,7 @@ void UMyCharacterMovementComponent::SimulatedTick(float DeltaSeconds) // on the 
 
 			// ANIM SECTION END
 			
-			GetOwner<AReplicationTestCharacter>()->LagCompensatedSkeleton->GetAnimInstance()->UpdateAnimation(DeltaSeconds, false);
+			GetOwner<AReplicationTestCharacter>()->LagCompensatedSkeleton->GetAnimInstance()->UpdateAnimation(0.01, false);
 			GetOwner<AReplicationTestCharacter>()->LagCompensatedSkeleton->RefreshBoneTransforms();
 			GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Red, FString::Printf(TEXT("UH OH")));
 		}
@@ -365,13 +372,12 @@ void UMyCharacterMovementComponent::SimulatedTick(float DeltaSeconds) // on the 
 				float Interp = FMath::Clamp((CurrentInterpolationTime - SnapshotBuffer[BeginIndex].Timestamp) / (SnapshotBuffer[static_cast<uint8>(BeginIndex+1)].Timestamp - SnapshotBuffer[BeginIndex].Timestamp), 0.0, 1.0);
 				FVector LerpPosition = FMath::Lerp(SnapshotBuffer[BeginIndex].Position, SnapshotBuffer[static_cast<uint8>(BeginIndex+1)].Position, Interp);
 				FRotator LerpRotation = FQuat::Slerp(FRotator(0.0,  SnapshotBuffer[BeginIndex].Yaw, 0.0).Quaternion(), FRotator(0.0, SnapshotBuffer[static_cast<uint8>(BeginIndex+1)].Yaw, 0.0).Quaternion(), Interp).Rotator();
-				GEngine->AddOnScreenDebugMessage(-1, 30.0f, FColor::Blue, FString::Printf(TEXT("Yaw: %f"), LerpRotation.Yaw));
 				GetOwner()->SetActorRotation(LerpRotation);
 				float LerpAnimPlaybackTime = FMath::Lerp(SnapshotBuffer[BeginIndex].AnimPlaybackTime, SnapshotBuffer[static_cast<uint8>(BeginIndex+1)].AnimPlaybackTime, Interp);
 				GetOwner()->SetActorLocation(LerpPosition);
 				AnimPlaybackTime = LerpAnimPlaybackTime;
 				InterpolateAnimation(SnapshotBuffer[BeginIndex], SnapshotBuffer[static_cast<uint8>(BeginIndex+1)], Interp);
-				GetOwner<AReplicationTestCharacter>()->LagCompensatedSkeleton->GetAnimInstance()->UpdateAnimation(DeltaSeconds, false);
+				GetOwner<AReplicationTestCharacter>()->LagCompensatedSkeleton->GetAnimInstance()->UpdateAnimation(0.01, false);
 				GetOwner<AReplicationTestCharacter>()->LagCompensatedSkeleton->RefreshBoneTransforms();
 				LastInterp = Interp;
 			}
@@ -379,7 +385,7 @@ void UMyCharacterMovementComponent::SimulatedTick(float DeltaSeconds) // on the 
 			{
 				GetOwner()->SetActorLocation(SnapshotBuffer[static_cast<uint8>(BeginIndex+1)].Position);
 				AnimPlaybackTime = SnapshotBuffer[static_cast<uint8>(BeginIndex+1)].AnimPlaybackTime;
-				GetOwner<AReplicationTestCharacter>()->LagCompensatedSkeleton->GetAnimInstance()->UpdateAnimation(DeltaSeconds, false);
+				GetOwner<AReplicationTestCharacter>()->LagCompensatedSkeleton->GetAnimInstance()->UpdateAnimation(0.01, false);
 				GetOwner<AReplicationTestCharacter>()->LagCompensatedSkeleton->RefreshBoneTransforms();
 			}
 		}
