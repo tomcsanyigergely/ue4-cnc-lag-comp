@@ -21,6 +21,7 @@ class REPLICATIONTEST_API AAimbot : public APawn
 	bool ShootSignal = false;
 
 	class AReplicationTestCharacter* Target = nullptr;
+	class ADefaultCharacter* DefaultTarget = nullptr;
 
 public:
 	// Sets default values for this pawn's properties
@@ -48,4 +49,7 @@ private:
 
 	UFUNCTION(Client, Reliable)
 	void HitboxRPC(const TArray<FVector>& Locations, const TArray<FRotator>& Rotations);
+
+	UFUNCTION(Client, Reliable)
+	void HitboxDefaultTargetRPC(const TArray<FVector>& Locations, const TArray<FRotator>& Rotations);
 };

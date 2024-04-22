@@ -5,8 +5,10 @@
 
 #include "Kismet/KismetSystemLibrary.h"
 #include "CollisionChannels.h"
+#include "DefaultCharacter.h"
 #include "DrawDebugHelpers.h"
 #include "ReplicationTestCharacter.h"
+#include "ReplicationTestGameMode.h"
 #include "ReplicationTestGameState.h"
 #include "GameFramework/GameStateBase.h"
 #include "GameFramework/PlayerState.h"
@@ -58,6 +60,28 @@ void AAimbot::Tick(float DeltaTime)
 				ShootSignal = false;
 			}
 		}
+		else if (DefaultTarget != nullptr)
+		{
+			FVector TargetLocation = DefaultTarget->GetActorLocation();
+			TargetLocation.Z = 0;
+
+			
+			FVector Direction = (TargetLocation - GetActorLocation()).GetSafeNormal();
+			Direction.Z = 0;
+			
+			CameraComponent->SetWorldRotation(UKismetMathLibrary::MakeRotFromX(Direction));
+
+			if (ShootSignal)
+			{
+				for(UBoxComponent* Box : DefaultTarget->Hitbox)
+				{
+					DrawDebugBox(GetWorld(), Box->GetComponentLocation(), Box->GetScaledBoxExtent(), Box->GetComponentRotation().Quaternion(), FColor::Blue, false, 10.0f, 0, 1);;
+				}
+
+				ShootServerRPC(GetActorLocation(), Direction, GetWorld()->GetGameState<AReplicationTestGameState>()->CurrentInterpolationTime);
+				ShootSignal = false;
+			}
+		}
 		else
 		{
 			TArray<AActor*> OutActors;
@@ -66,6 +90,7 @@ void AAimbot::Tick(float DeltaTime)
 			if (OutActors.Num() >= 1)
 			{
 				Target = Cast<AReplicationTestCharacter>(OutActors[0]);
+				DefaultTarget = Cast<ADefaultCharacter>(OutActors[0]);
 			}
 			
 			GetWorldTimerManager().SetTimer(ShootTimer, FTimerDelegate::CreateUObject(this, &AAimbot::Shoot), ShootInterval, true);
@@ -80,6 +105,7 @@ void AAimbot::Tick(float DeltaTime)
 		if (OutActors.Num() >= 1)
 		{
 			Target = Cast<AReplicationTestCharacter>(OutActors[0]);
+			DefaultTarget = Cast<ADefaultCharacter>(OutActors[0]);
 		}
 	}
 }
@@ -107,56 +133,86 @@ void AAimbot::HitboxRPC_Implementation(const TArray<FVector>& Locations, const T
 	}
 }
 
+void AAimbot::HitboxDefaultTargetRPC_Implementation(const TArray<FVector>& Locations, const TArray<FRotator>& Rotations)
+{
+	if (IsLocallyControlled())
+	{
+		for(int i = 0; i < DefaultTarget->Hitbox.Num(); i++)
+		{
+			DrawDebugBox(GetWorld(), Locations[i], DefaultTarget->Hitbox[i]->GetScaledBoxExtent(), Rotations[i].Quaternion(), FColor::Red, false, 10.0f, 0, 1);;
+		}
+	}
+}
+
 void AAimbot::ShootServerRPC_Implementation(FVector Location, FVector Direction, float TargetRewindTime)
 {
-	FHitResult OutHit;
-
-	float AuthRewindTime = GetWorld()->GetTimeSeconds() - GetPlayerState()->ExactPingV2 * 0.001 - 0.20;
-	float RewindTime = FMath::Clamp(TargetRewindTime, AuthRewindTime - 0.025f, AuthRewindTime + 0.025f);
-
-	UE_LOG(LogTemp, Warning, TEXT("TargetRewindTime: %f, AuthRewindTime: %f, RewindTime: %f, Diff: %f"), TargetRewindTime, AuthRewindTime, RewindTime, RewindTime-TargetRewindTime);
-
-	for (const APlayerState* _PlayerState : GetWorld()->GetGameState()->PlayerArray)
+	if (!GetWorld()->GetAuthGameMode<AReplicationTestGameMode>()->DisableLagCompensation)
 	{
-		AReplicationTestCharacter* Character = _PlayerState->GetPawn<AReplicationTestCharacter>();
-		if (IsValid(Character))
-		{
-			Character->GetMyCharacterMovementComponent()->RewindPose(RewindTime);
-			FVector TargetLocation = Character->Head->GetComponentLocation();
-		}
-	}
+		FHitResult OutHit;
 
-	if (Target != nullptr)
-	{
-		TArray<FVector> HitboxLocations;
-		TArray<FRotator> HitboxRotations;
+		float AuthRewindTime = GetWorld()->GetTimeSeconds() - GetPlayerState()->ExactPingV2 * 0.001 - 0.20;
+		float RewindTime = FMath::Clamp(TargetRewindTime, AuthRewindTime - 0.025f, AuthRewindTime + 0.025f);
 
-		for(UBoxComponent* HitBox : Target->Hitbox)
+		UE_LOG(LogTemp, Warning, TEXT("TargetRewindTime: %f, AuthRewindTime: %f, RewindTime: %f, Diff: %f"), TargetRewindTime, AuthRewindTime, RewindTime, RewindTime-TargetRewindTime);
+
+		for (const APlayerState* _PlayerState : GetWorld()->GetGameState()->PlayerArray)
 		{
-			HitboxLocations.Add(HitBox->GetComponentLocation());
-			HitboxRotations.Add(HitBox->GetComponentRotation());
+			AReplicationTestCharacter* Character = _PlayerState->GetPawn<AReplicationTestCharacter>();
+			if (IsValid(Character))
+			{
+				Character->GetMyCharacterMovementComponent()->RewindPose(RewindTime);
+				FVector TargetLocation = Character->Head->GetComponentLocation();
+			}
 		}
 
-		HitboxRPC(HitboxLocations, HitboxRotations);
-	}
+		if (Target != nullptr)
+		{
+			TArray<FVector> HitboxLocations;
+			TArray<FRotator> HitboxRotations;
 
-	UKismetSystemLibrary::LineTraceSingle(GetWorld(), Location, Location + Direction * 10000.0f, UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_GameTraceChannel_WeaponTrace), false, {}, EDrawDebugTrace::None, OutHit, false);
+			for(UBoxComponent* HitBox : Target->Hitbox)
+			{
+				HitboxLocations.Add(HitBox->GetComponentLocation());
+				HitboxRotations.Add(HitBox->GetComponentRotation());
+			}
 
-	if (OutHit.bBlockingHit)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("HIT !!!!!!!!!"));
+			HitboxRPC(HitboxLocations, HitboxRotations);
+		}
+
+		UKismetSystemLibrary::LineTraceSingle(GetWorld(), Location, Location + Direction * 10000.0f, UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_GameTraceChannel_WeaponTrace), false, {}, EDrawDebugTrace::None, OutHit, false);
+
+		if (OutHit.bBlockingHit)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("HIT !!!!!!!!!"));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("MISS"));
+		}
+	
+		for (const APlayerState* _PlayerState : GetWorld()->GetGameState()->PlayerArray)
+		{
+			AReplicationTestCharacter* Character = _PlayerState->GetPawn<AReplicationTestCharacter>();
+			if (IsValid(Character))
+			{
+				Character->GetMyCharacterMovementComponent()->ResetPose();
+			}
+		}
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("MISS"));
-	}
-	
-	for (const APlayerState* _PlayerState : GetWorld()->GetGameState()->PlayerArray)
-	{
-		AReplicationTestCharacter* Character = _PlayerState->GetPawn<AReplicationTestCharacter>();
-		if (IsValid(Character))
+		if (DefaultTarget != nullptr)
 		{
-			Character->GetMyCharacterMovementComponent()->ResetPose();
+			TArray<FVector> HitboxLocations;
+			TArray<FRotator> HitboxRotations;
+
+			for(UBoxComponent* HitBox : DefaultTarget->Hitbox)
+			{
+				HitboxLocations.Add(HitBox->GetComponentLocation());
+				HitboxRotations.Add(HitBox->GetComponentRotation());
+			}
+
+			HitboxDefaultTargetRPC(HitboxLocations, HitboxRotations);
 		}
 	}
 }

@@ -1,7 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "ReplicationTestGameMode.h"
-#include "ReplicationTestCharacter.h"
 #include "UObject/ConstructorHelpers.h"
 
 AReplicationTestGameMode::AReplicationTestGameMode()
@@ -19,6 +18,14 @@ void AReplicationTestGameMode::InitGame(const FString& MapName, const FString& O
 	bStartPlayersAsSpectators = true;
 	
 	Super::InitGame(MapName, Options, ErrorMessage);
+
+#if WITH_EDITOR
+	DisableLagCompensation = DisableLagCompensationEditor;
+#else
+	DisableLagCompensation = FParse::Param(FCommandLine::Get(), TEXT("DisableLagCompensation"));
+#endif
+
+	UE_LOG(LogTemp, Warning, TEXT("DisableLagCompensation: %d"), DisableLagCompensation);
 }
 
 void AReplicationTestGameMode::PostLogin(APlayerController* NewPlayer)
@@ -33,8 +40,16 @@ void AReplicationTestGameMode::PostLogin(APlayerController* NewPlayer)
 
 	if (lastPlayerIndex == 1)
 	{
-		NewPawn = GetWorld()->SpawnActor<APawn>(PlayerPawnClass, FVector{0.0, 0.0, 200.0}, FRotator::ZeroRotator, ActorSpawnParameters);
-		UE_LOG(LogTemp, Warning, TEXT("Character spawned."));
+		if (!DisableLagCompensation)
+		{
+			NewPawn = GetWorld()->SpawnActor<APawn>(PlayerPawnClass, FVector{0.0, 0.0, 200.0}, FRotator::ZeroRotator, ActorSpawnParameters);
+			UE_LOG(LogTemp, Warning, TEXT("Character spawned."));
+		}
+		else
+		{
+			NewPawn = GetWorld()->SpawnActor<APawn>(DefaultPlayerPawnClass, FVector{0.0, 0.0, 200.0}, FRotator::ZeroRotator, ActorSpawnParameters);
+			UE_LOG(LogTemp, Warning, TEXT("Default Character spawned."));
+		}
 	}
 	else if (lastPlayerIndex == 2)
 	{

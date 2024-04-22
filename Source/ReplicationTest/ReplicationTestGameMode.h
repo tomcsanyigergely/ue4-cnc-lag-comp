@@ -17,9 +17,17 @@ class AReplicationTestGameMode : public AGameModeBase
 	UPROPERTY(EditDefaultsOnly, meta=(AllowPrivateAccess))
 	TSubclassOf<APawn> AimbotPawnClass;
 
-	int lastPlayerIndex = 0;
+	UPROPERTY(EditDefaultsOnly, meta=(AllowPrivateAccess))
+	TSubclassOf<APawn> DefaultPlayerPawnClass;
+
+	int lastPlayerIndex = 0;	
+
+	UPROPERTY(EditDefaultsOnly)
+	bool DisableLagCompensationEditor = false;
 
 public:
+	bool DisableLagCompensation = false;
+	
 	AReplicationTestGameMode();
 
 	virtual void InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) override;
