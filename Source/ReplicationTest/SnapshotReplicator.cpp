@@ -80,7 +80,7 @@ void ASnapshotReplicator::Tick(float DeltaTime)
 						int32 StateIndex = BakedAnimationStateMachine->FindStateIndex(State.StateName);
 						float StateWeight = AnimInstance->GetInstanceStateWeight(MachineIndex, StateIndex);
 
-						if (StateWeight > 0 || true)
+						if (StateWeight > 0)
 						{
 							if (State.StateName == "Idle/Run")
 							{
